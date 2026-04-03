@@ -70,6 +70,14 @@ This project is a derivative work built on top of an incredible chain of open-so
 
 **What emojiGPT adds:** Starting from Xenova's microgpt.js, we redesigned the application from name generation to **emoji story generation** — a new training dataset of ~170 emoji narratives, a token-by-token inference playground with real-time probability visualization, and a fully reworked UI. The core autograd engine and transformer architecture come from the upstream projects above.
 
+## Follow Me
+
+I write about AI, startups, and psychology.
+
+- **WeChat (公众号):** MindCode
+- **X:** [@moneygalaxy](https://x.com/moneygalaxy)
+- **Substack:** [mindcodeplus](https://substack.com/@mindcodeplus)
+
 ## License
 
 MIT
