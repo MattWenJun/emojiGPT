@@ -52,11 +52,13 @@ Default config: 16-dim embeddings, 4 attention heads, 1 layer, ~4K parameters.
 
 ## Acknowledgements
 
-This project is inspired by and built upon the ideas from:
+This project is a derivative work built on top of an incredible chain of open-source contributions:
 
-- [**microGPT**](https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95) by **Andrej Karpathy** — the most atomic way to train and run a GPT, in pure dependency-free Python. The autograd engine and GPT architecture in emojiGPT directly follow this beautifully minimal design.
+1. [**microGPT**](https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95) by **Andrej Karpathy** — the original minimal GPT implementation in pure, dependency-free Python. It demonstrated that you can train and run a complete GPT from scratch in a single file, with a working autograd engine and transformer architecture. The original model generates English names.
 
-- [**microgpt.js**](https://github.com/xenova/microgpt.js) by **Xenova** — porting the microGPT concept to JavaScript for the browser. This project demonstrated that a full transformer training loop can run client-side, which directly inspired emojiGPT's browser-first approach.
+2. [**microgpt.js**](https://github.com/xenova/microgpt.js) by **Xenova** — a JavaScript port of Karpathy's microGPT that brought the entire training and inference pipeline into the browser. This is the direct codebase that emojiGPT is built upon.
+
+**What emojiGPT adds:** Starting from Xenova's microgpt.js, we redesigned the application from name generation to **emoji story generation** — a new training dataset of ~170 emoji narratives, a token-by-token inference playground with real-time probability visualization, and a fully reworked UI. The core autograd engine and transformer architecture come from the upstream projects above.
 
 ## License
 
