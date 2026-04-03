@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>emojiGPT — Emoji Story Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --text: #e0e0e8;
+    --text-dim: #7a7a8e;
+    --accent: #00e5a0;
+    --accent-dim: rgba(0, 229, 160, 0.15);
+    --loss-high: #ff4466;
+    --loss-mid: #ffaa33;
+    --loss-low: #00e5a0;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--mono); min-height: 100vh; overflow-x: hidden;
+  }
+  .grain {
+    position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  header {
+    padding: 2rem 2rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: baseline; gap: 1.5rem; flex-wrap: wrap;
+  }
+  header h1 { font-family: var(--sans); font-size: 1.6rem; font-weight: 700; color: var(--accent); letter-spacing: -0.03em; }
+  header .tag { font-size: 0.7rem; color: var(--text-dim); background: var(--surface2); padding: 0.25rem 0.6rem; border-radius: 3px; border: 1px solid var(--border); }
+  .container {
+    max-width: 1200px; margin: 0 auto; padding: 1.5rem 2rem 3rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+  }
+  @media (max-width: 800px) { .container { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .card-head {
+    padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
+    font-family: var(--sans); font-weight: 600; font-size: 0.85rem;
+    color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .card-head .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .card-body { padding: 1rem; }
+
+  .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .config-item { display: flex; flex-direction: column; gap: 0.2rem; }
+  .config-item label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+  .config-item input {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    font-family: var(--mono); font-size: 0.8rem; padding: 0.4rem 0.5rem;
+    border-radius: 3px; outline: none; transition: border-color 0.2s;
+  }
+  .config-item input:focus { border-color: var(--accent); }
+  .config-item textarea {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    font-family: var(--mono); font-size: 1rem; padding: 0.5rem;
+    border-radius: 3px; outline: none; resize: vertical; min-height: 160px;
+    transition: border-color 0.2s; line-height: 1.8;
+  }
+  .config-item textarea:focus { border-color: var(--accent); }
+  .config-full { grid-column: 1 / -1; }
+
+  .btn {
+    font-family: var(--mono); font-size: 0.8rem; font-weight: 500;
+    padding: 0.6rem 1.5rem; border: none; border-radius: 4px;
+    cursor: pointer; transition: all 0.15s; margin-top: 0.5rem;
+  }
+  .btn-primary { background: var(--accent); color: var(--bg); }
+  .btn-primary:hover { filter: brightness(1.15); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
+  .btn-stop { background: var(--loss-high); color: #fff; margin-left: 0.5rem; }
+
+  #lossCanvas { width: 100%; height: 200px; display: block; }
+
+  .stats-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .stat { flex: 1; min-width: 80px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.5rem 0.7rem; text-align: center; }
+  .stat-val { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.15rem; }
+
+  #logOutput {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: 0.6rem; font-size: 0.7rem; line-height: 1.5;
+    max-height: 220px; overflow-y: auto; color: var(--text-dim);
+    white-space: pre-wrap; word-break: break-all;
+  }
+  #logOutput .step { color: var(--text-dim); }
+  #logOutput .loss-good { color: var(--loss-low); }
+  #logOutput .loss-ok { color: var(--loss-mid); }
+  #logOutput .loss-bad { color: var(--loss-high); }
+  #logOutput .sample-line { color: var(--accent); }
+  #logOutput .info { color: #6688cc; }
+
+  .samples-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .sample-tag {
+    background: var(--accent-dim); border: 1px solid rgba(0,229,160,0.25);
+    color: var(--accent); font-size: 0.95rem; padding: 0.3rem 0.6rem;
+    border-radius: 3px; animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .progress-bar { height: 3px; background: var(--bg); border-radius: 2px; overflow: hidden; margin-top: 0.5rem; }
+  .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.1s; border-radius: 2px; }
+
+  /* ===== Inference playground ===== */
+  .infer-section { display: none; }
+  .infer-section.visible { display: block; }
+  .infer-input-row { display: flex; gap: 0.5rem; align-items: stretch; margin-bottom: 0.75rem; }
+  .infer-input-row input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    font-size: 1.4rem; padding: 0.5rem 0.7rem; border-radius: 4px;
+    font-family: var(--mono); outline: none; letter-spacing: 0.15em;
+  }
+  .infer-input-row input:focus { border-color: var(--accent); }
+  .infer-input-row input::placeholder { color: var(--text-dim); font-size: 0.8rem; letter-spacing: 0; }
+
+  .story-display {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 1.2rem; min-height: 80px; font-size: 2rem; line-height: 1.6;
+    letter-spacing: 0.2em; word-break: break-all;
+  }
+  .story-display .tok-prompt { opacity: 1; }
+  .story-display .tok-gen {
+    animation: tokenPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: inline-block;
+  }
+  .story-display .tok-cursor {
+    display: inline-block; width: 3px; height: 1.5em; background: var(--accent);
+    vertical-align: text-bottom; margin-left: 2px;
+    animation: blink 0.8s step-end infinite;
+  }
+  @keyframes tokenPop {
+    0% { opacity: 0; transform: scale(0.3) translateY(8px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+  .prob-bar-container { margin-top: 1rem; }
+  .prob-bar-title {
+    font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 0.4rem;
+  }
+  .prob-row {
+    display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;
+    font-size: 0.8rem; height: 1.6rem;
+  }
+  .prob-emoji { width: 2rem; text-align: center; font-size: 1.1rem; }
+  .prob-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .prob-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  .prob-pct { width: 3.5rem; text-align: right; font-size: 0.7rem; color: var(--text-dim); }
+  .prob-chosen .prob-emoji { transform: scale(1.3); }
+  .prob-chosen .prob-fill { background: var(--accent) !important; }
+  .prob-chosen .prob-pct { color: var(--accent); font-weight: 700; }
+
+  .vocab-hint {
+    margin-bottom: 0.75rem; padding: 0.5rem 0.7rem;
+    background: var(--surface2); border-radius: 4px;
+    font-size: 0.75rem; color: var(--text-dim); line-height: 2;
+  }
+  .vocab-hint strong { color: var(--text); }
+  .vocab-hint .emoji-list { font-size: 0.95rem; letter-spacing: 0.1em; }
+
+  .infer-step-label {
+    font-size: 0.7rem; color: var(--text-dim); margin-top: 0.5rem;
+    text-align: center; letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header>
+  <h1>emojiGPT</h1>
+  <span class="tag">train a tiny GPT on emoji stories · watch it generate new ones token by token · all in your browser</span>
+</header>
+
+<div class="container">
+  <!-- Left column -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+    <div class="card">
+      <div class="card-head">Configuration</div>
+      <div class="card-body">
+        <div class="config-grid">
+          <div class="config-item">
+            <label>Embedding dim</label>
+            <input id="cfgEmbd" type="number" value="16" min="4" max="64" step="4">
+          </div>
+          <div class="config-item">
+            <label>Attention heads</label>
+            <input id="cfgHeads" type="number" value="4" min="1" max="16">
+          </div>
+          <div class="config-item">
+            <label>Layers</label>
+            <input id="cfgLayers" type="number" value="1" min="1" max="4">
+          </div>
+          <div class="config-item">
+            <label>Block size</label>
+            <input id="cfgBlock" type="number" value="32" min="4" max="64">
+          </div>
+          <div class="config-item">
+            <label>Train steps</label>
+            <input id="cfgSteps" type="number" value="2000" min="10" max="10000" step="10">
+          </div>
+          <div class="config-item">
+            <label>Learning rate</label>
+            <input id="cfgLR" type="number" value="0.01" min="0.0001" max="0.1" step="0.001">
+          </div>
+          <div class="config-item">
+            <label>Temperature</label>
+            <input id="cfgTemp" type="number" value="0.5" min="0.1" max="2.0" step="0.1">
+          </div>
+          <div class="config-item config-full">
+            <label>Training stories — one emoji story per line, spaces between tokens</label>
+            <span style="font-size:0.6rem;color:var(--text-dim);margin-bottom:0.15rem;">Edit freely — write your own stories or use AI to generate them, then paste here.</span>
+            <textarea id="cfgData">🌅 🐓 🎵 ☕ 🍳 😋 🚶 🏢
+🌅 🐓 🎵 ☕ 🥐 😋 📖 🏫
+🌅 🐓 🎵 🍵 🍳 😋 🚗 🏢
+🌅 🐓 🎵 🏃 💦 💪 🚿 ☕
+🌅 🐓 ☕ 📰 🚗 🏢 💻 😊
+🌅 🌸 🐝 🌳 🐕 🏃 ☕ 😊
+🌅 ⛰️ 🥾 📸 🦅 😮 🌄 😊
+🌙 🛏️ 📖 😴 💤 🌅 🐓 🎵
+🌙 ⭐ 🎵 😴 💤 🌅 🐓 ☕
+🌙 🌧️ 😴 💤 🌅 ☕ 🍳 😋
+🌙 🕯️ 📖 🍵 😌 😴 💤 🌅
+🌧️ ☂️ 🚶 💦 😢 ☕ 🔥 😊
+🌧️ ☂️ 🚗 🏢 💻 ☕ 💡 😊
+🌧️ 🌪️ 😱 🏠 🕯️ 📖 😌 💤
+🌧️ ⛈️ 😱 🏠 📻 🕯️ 👨‍👩‍👧‍👦 😌
+🌧️ 😢 ☕ 🎵 📖 😌 🌈 😊
+☀️ 🌳 🐕 🎾 🏃 💦 🍦 😊
+☀️ 🌊 🏖️ 🩱 🏊 🐚 🍦 😊
+☀️ 🌳 🧺 🍎 🧀 🍷 😋 💕
+☀️ 🌻 📸 🦋 🐝 🌳 😊 🌅
+☀️ 🏊 🌊 🐚 📸 🍦 😊 🌅
+🐕 🦴 🏃 🌳 🐿️ 😮 🐕 🎾
+🐕 🎾 🏃 💦 🐕 🦴 😴 💤
+🐕 🤒 🏥 💉 😢 💊 🐕 😊
+🐱 🐟 😋 🛋️ 😴 💤 🌙 ⭐
+🐱 🧶 🏃 😸 🛋️ 😴 💤 🐱
+🐱 🤒 🏥 💉 😢 💊 😸 😊
+👨‍🍳 🔪 🥕 🍅 🔥 🍲 😋 👏
+👨‍🍳 🔪 🐟 🍋 🔥 🍽️ 😋 🍷
+👨‍🍳 📖 💡 🥕 🍅 🔥 🍲 😋
+👨‍🍳 🔪 🥩 🔥 🧂 🍽️ 😋 🍺
+👨‍🍳 🍝 🍅 🧄 🔥 🧀 😋 🍷
+🎄 🎁 👨‍👩‍👧‍👦 🎵 🍗 🎂 😊 💕
+🎄 ⭐ 🎁 😊 🎵 🍷 👨‍👩‍👧‍👦 💕
+🎂 🎁 🎈 👨‍👩‍👧‍👦 🎵 🍰 😊 💕
+🎂 🎁 🎈 🎵 💃 🍰 😊 📸
+💻 ☕ 💡 ⌨️ 🐛 😤 ☕ 💡
+💻 ☕ ⌨️ 💡 🚀 😊 🍺 👏
+💻 📖 💡 ⌨️ 🚀 👏 🍺 😊
+💻 🐛 😤 ☕ 💡 ⌨️ ✅ 🚀
+💻 ☕ ⌨️ ⌨️ 🐛 😤 💡 ✅
+📖 ☕ 💡 ✍️ 📖 😌 💤 🌙
+📖 🍵 😌 💡 ✍️ 📖 😊 🌙
+📖 ☕ 📖 💡 😮 ✍️ 📖 😊
+🏃 💦 🎵 🏃 💪 🍌 🚿 😊
+🏃 🌅 🎵 💦 💪 ☕ 🍳 😋
+🏃 💦 💪 🏃 🤕 🩹 😢 🛏️
+✈️ 🧳 🏖️ 🌊 🍦 📸 😊 ✈️
+✈️ 🧳 🗻 🥾 📸 ⭐ 😊 ✈️
+✈️ 🧳 🏛️ 📸 🍕 🍷 😊 ✈️
+✈️ 🧳 🌸 🏯 🍣 🍵 😊 ✈️
+🤰 🏥 👶 😭 🍼 💕 😊 👨‍👩‍👧‍👦
+🤰 😊 🏥 👶 😭 🍼 😴 💕
+🤰 🤢 😣 🏥 💊 😌 🤰 😊
+🤰 🏥 👩‍⚕️ 👶 😭 💕 🍼 😊
+🤰 😊 👶 🍼 😴 💤 👶 😊
+👶 🍼 😴 👶 😭 🍼 😴 💤
+👶 😭 🍼 😴 💤 👶 🏃 😊
+👶 🍼 💕 👶 😊 🎵 😴 💤
+👶 🏥 🤒 💉 😭 💊 😴 😊
+🤒 🏥 👩‍⚕️ 💉 💊 🛏️ 😴 😊
+🤒 🤧 🛏️ 🍵 💊 😴 🤒 😢
+🤒 🏥 💉 🩺 💊 🛏️ 😴 😌
+🤒 😢 🏥 👩‍⚕️ 🩺 💊 🛏️ 😊
+🤒 🤧 😢 🍵 💊 🛏️ 😴 😊
+🤕 🩹 🏥 👩‍⚕️ 💊 🛏️ 😢 😌
+🤕 🩹 😢 🏥 🩺 💉 🛏️ 😴
+🤕 🚑 🏥 👩‍⚕️ 💉 🩹 🛏️ 😢
+🤕 🩹 🛏️ 💊 😴 🤕 🩹 😢
+🤕 🚑 🏥 🩺 💊 🛏️ 😴 🙏
+🏥 👩‍⚕️ 🩺 💉 💊 😢 🙏 😊
+🏥 🚑 🤕 👩‍⚕️ 💉 🛏️ 😴 😌
+🏥 🤒 🩺 💊 🛏️ 😴 😊 🏠
+🏥 👩‍⚕️ 🩺 😢 💊 🙏 🛏️ 😌
+😷 🤒 🏥 🩺 💉 💊 🛏️ 😴
+😷 🤧 🛏️ 🍵 💊 😴 😷 😢
+😷 🏥 👩‍⚕️ 💉 💊 🙏 😊 🏠
+⚔️ 💥 🤕 🩸 🏥 💉 🩹 😢
+⚔️ 💥 😱 🏃 🤕 🩸 🏥 🙏
+⚔️ 🛡️ 💥 🤕 🩸 😢 🏥 💉
+⚔️ 💥 🔥 😱 🏃 🏥 🩹 😢
+⚔️ 💥 🤕 🩸 😢 🙏 🕊️ 💕
+⚔️ 🛡️ 💥 🏃 😱 🏠 😢 🙏
+⚔️ 💥 🔥 🏠 😱 😢 🏃 🕊️
+⚔️ 🛡️ 💪 ⚔️ 💥 🤕 🏥 🩹
+⚔️ 💥 😢 🕊️ 🙏 🏠 👨‍👩‍👧‍👦 💕
+💥 🔥 😱 🚑 🏥 🤕 🩹 😢
+💥 🔥 🏠 😱 🏃 😢 🏥 🙏
+💥 😱 🤕 🩸 🚑 🏥 💉 🙏
+🩸 🤕 🏥 👩‍⚕️ 💉 🩹 🛏️ 🙏
+🩸 🚑 🏥 💉 🩹 😢 🙏 😌
+💀 😢 🕯️ 🌹 🙏 👨‍👩‍👧‍👦 😢 💕
+💀 😢 🕯️ 🙏 🌹 😢 📖 😌
+💀 😢 👨‍👩‍👧‍👦 🕯️ 🌹 🙏 😢 💕
+💀 🕯️ 🌹 😢 🙏 📖 😌 🌅
+💀 😢 🕯️ 🙏 👨‍👩‍👧‍👦 💕 😢 🌅
+💀 😢 🌹 🕯️ 🎵 🙏 😢 💕
+🕯️ 🌹 😢 🙏 💕 📖 😌 🌅
+🕯️ 😢 🙏 👨‍👩‍👧‍👦 💕 🌹 😌 🌅
+🕯️ 🌹 🎵 😢 🙏 😌 💕 🌅
+👴 🤒 🏥 🩺 💊 🛏️ 😢 🙏
+👴 🤒 😢 🏥 👩‍⚕️ 💊 😴 🙏
+👴 💀 😢 🕯️ 🌹 🙏 👨‍👩‍👧‍👦 💕
+👴 📖 👶 💕 🎵 😊 👨‍👩‍👧‍👦 💕
+👴 🛏️ 😴 💀 😢 🕯️ 🌹 🙏
+💔 😢 🌧️ 🛏️ 🎵 📖 😢 😌
+💔 😢 ☕ 📖 🎵 😢 😌 🌅
+💔 😢 🌧️ ☕ 📖 💡 😌 🌅
+💔 😢 👨‍👩‍👧‍👦 💕 ☕ 🎵 😌 😊
+💔 😢 🏃 🎵 💦 💪 😌 🌅
+🕊️ 🙏 🌅 🌸 🐝 🌳 😊 💕
+🕊️ 🙏 👨‍👩‍👧‍👦 💕 🎵 😊 🌅 🌸
+🕊️ 🌹 🙏 😢 😌 🌅 🌸 😊
+💉 💊 🛏️ 😴 🤒 😢 💊 😌
+💉 🏥 👩‍⚕️ 🩺 💊 🛏️ 🙏 😊
+💊 🛏️ 😴 💊 😌 ☕ 🏃 😊
+💊 🍵 🛏️ 😴 💊 😌 🌅 😊
+🏠 🔥 😱 🚒 💦 😢 🏠 🙏
+🏠 🔥 😱 🏃 🚒 😢 🙏 💕
+🚗 💥 🤕 🚑 🏥 💉 🩹 😢
+🚗 💥 😱 🚑 🏥 👩‍⚕️ 🩹 🙏
+🚗 💥 🩸 🚑 🏥 💉 🛏️ 😢
+💃 🎵 🍷 💃 😊 🌙 ⭐ 💕
+💃 🎵 😊 🍺 👏 💃 🌙 💕
+💃 🎵 🍷 😊 💕 🌙 ⭐ 😴
+🎵 🎸 👏 🎵 💃 😊 🍺 🌙
+🎵 🎸 😊 👏 🍺 💃 🌙 ⭐
+🎓 📖 ✍️ 😤 📖 💡 🎓 👏
+🎓 📖 ☕ ✍️ 😤 💡 🎓 😊
+🎓 👏 🎉 👨‍👩‍👧‍👦 🍰 📸 💕 😊
+🎓 📖 💡 ✍️ 🎓 👏 🎉 💕
+👨‍👩‍👧‍👦 🏠 🍲 🎵 📖 😊 💕 🌙
+👨‍👩‍👧‍👦 🏖️ 🌊 🍦 📸 😊 💕 🌅
+👨‍👩‍👧‍👦 🎄 🎁 🎵 🍗 🎂 💕 😊
+👨‍👩‍👧‍👦 ⚔️ 😱 🏃 😢 🙏 🕊️ 💕
+👨‍👩‍👧‍👦 🤒 🏥 😢 💊 🙏 😊 💕
+💪 🏃 💦 🍌 🚿 ☕ 😊 💪
+💪 🏋️ 💦 🏃 🍌 🚿 😊 💪
+💪 🏃 🤕 🩹 🛏️ 💊 😢 😌
+🌊 🏄 🌊 😱 🌊 🏊 😮 😊
+🌊 🏄 😊 🌊 🐚 📸 🍦 🌅
+🌊 ⛈️ 😱 🌊 🏊 😮 🏖️ 😊
+🐝 🤕 😢 🩹 💊 😢 😌 😊
+🐍 😱 🏃 🤕 🩸 🏥 💉 🙏
+🌋 😱 🏃 🔥 😢 🏠 🙏 😢
+🌋 🔥 😱 🏃 🚗 😢 🙏 🕊️
+⛰️ 🥾 📸 🦅 😮 ⛰️ 🌅 😊
+⛰️ 🥾 🤕 🩹 😢 🚑 🏥 🙏
+🌸 🐝 🌳 😊 📸 🍵 😌 💕
+🌸 🌅 📸 🐝 🦋 😊 🌳 💕
+🐓 🌅 🎵 ☕ 🍳 😋 🏃 💪
+🐓 🌅 🎵 ☕ 📰 🚗 🏢 💻
+🍺 🎵 💃 😊 🍺 😵 🤢 🛏️
+🍺 🍺 😵 🤢 🛏️ 😴 🤕 ☕
+🍷 🍽️ 😋 💕 🎵 💃 🌙 😊
+🍷 🧀 😋 📖 🎵 😌 🌙 💕
+🎾 🏃 💦 💪 🎾 👏 🍺 😊
+🎾 🏃 🤕 🩹 😢 🛏️ 💊 😌
+⚽ 🏃 💦 ⚽ 👏 😊 🍺 💪
+⚽ 🏃 🤕 🩹 🏥 😢 🛏️ 🙏
+🎣 🌅 🐟 😊 🔥 🐟 😋 🌙
+🎣 🌅 🌊 😌 🐟 🔥 😋 ⭐
+🏕️ 🔥 ⭐ 🎵 🌙 😴 🌅 ☕
+🏕️ 🌧️ 😢 🔥 🎵 😌 😴 🌅
+🐻 😱 🏃 🤕 🩸 🏥 💉 🙏
+🐺 😱 🏃 🔥 🐺 😮 😢 🙏
+🌹 💕 😊 💃 🎵 🍷 🌙 💕
+🌹 💔 😢 🌧️ ☕ 📖 😌 🌅
+💍 💕 😊 👏 🎉 🍰 📸 💕
+💍 💔 😢 🌧️ 📖 🎵 😌 🌅
+🏆 👏 🎉 😊 🍺 💃 🎵 💕
+🏆 🏃 💦 💪 👏 🎉 😊 🍺
+📸 🌅 🌊 📸 🌸 🦋 😊 💕
+📸 ⛰️ 🦅 📸 🌅 😮 😊 📸
+🚀 💻 ⌨️ 💡 🚀 👏 🎉 😊
+🚀 💻 ☕ 🐛 😤 💡 🚀 👏
+✍️ ☕ 📖 💡 ✍️ ✍️ 😊 📖
+✍️ 📖 💡 ✍️ 😤 ☕ 💡 ✍️
+🚒 🔥 💦 🏠 😢 🙏 🏠 😊
+🚒 🔥 😱 💦 👏 😊 🙏 💕
+🚑 🤕 🏥 👩‍⚕️ 💉 🩹 🛏️ 🙏
+🚑 💥 🤕 🏥 🩺 💊 😢 😌
+👩‍⚕️ 🩺 💉 💊 😊 🙏 🏥 👏
+👩‍⚕️ 🏥 🤒 🩺 💊 🛏️ 😊 🙏
+🏋️ 💪 💦 🏃 🍌 🚿 😊 💪
+🏋️ 💪 🤕 🩹 😢 🛏️ 💊 😌
+🧘 😌 🍵 📖 💡 😊 🌅 🙏
+🧘 😌 🎵 🍵 😊 💕 🌙 😴
+🛒 🥕 🍅 🍎 🧀 🍞 🏠 👨‍🍳
+🛒 🥕 🍅 🥩 🧄 🏠 🔪 🔥
+📰 ☕ 📖 😮 💡 📰 😊 ☕
+📰 ☕ 😢 📰 🌧️ 😌 📖 🌅
+🎈 🎉 🎵 💃 🍰 😊 📸 💕
+🎈 🎉 👨‍👩‍👧‍👦 🎵 🍰 😊 💕 🌙
+🕯️ 📖 🙏 😌 🍵 😴 💤 🌅
+🕯️ 🙏 😢 💕 👨‍👩‍👧‍👦 😌 📖 🌅
+🌪️ 😱 🏠 🕯️ 📻 😢 🙏 🌅
+🌪️ 🏠 💥 😱 😢 🏥 🩹 🙏
+⛈️ 🌊 😱 🏠 🕯️ 😢 🙏 🌅
+⛈️ 💥 🔥 🏠 😱 🚒 😢 🙏
+🐟 🔥 🍋 🧂 🍽️ 😋 🍷 😊
+🐟 🎣 🌊 😊 🔥 🍽️ 😋 ⭐
+🍕 🧀 🔥 😋 🍺 💃 🎵 😊
+🍕 🍅 🧀 🔥 😋 👏 😊 💕
+🥩 🔥 🧂 🍽️ 😋 🍷 😊 💕
+🥩 🔪 🔥 🧄 🍽️ 😋 👏 🍺
+🍞 🧀 ☕ 😋 📰 📖 😊 🌅
+🍞 🥐 ☕ 😋 🌅 📰 😊 🚗
+🤢 🛏️ 💊 🍵 😴 🤢 😢 💊
+🤢 🏥 🩺 💊 🛏️ 😴 😌 😊
+😵 🛏️ 😴 💊 ☕ 😵 😢 🛏️
+😱 🏃 😢 🏠 🕯️ 🙏 😌 🌅
+😱 💥 🤕 🏃 🏥 😢 🙏 😌
+🏛️ 📸 📖 🍕 🍷 😊 🏛️ ✈️
+🏛️ 📖 😮 📸 🍽️ 😋 😊 ✈️
+🏯 🌸 📸 🍣 🍵 😊 🏯 ✈️
+🏯 📸 🌸 🎵 🍵 😊 💕 ✈️
+🗻 🥾 📸 😮 🏕️ 🔥 ⭐ 🌅
+🗻 🥾 🤕 🩹 😢 🚑 🏥 🙏
+🎸 🎵 👏 😊 🍺 💃 🌙 ⭐
+🎸 🎵 😊 👏 🎉 🍺 💃 💕
+🦋 🌸 📸 😊 🌳 🍵 😌 💕
+🦋 🌸 🐝 😊 📸 🌅 😌 💕
+🐿️ 🌳 🐕 🏃 😮 🐕 🎾 😊
+🐿️ 🌳 📸 😊 🐿️ 🌳 😌 🌅
+👻 😱 🏃 😱 💡 😊 😂 💕
+🎃 👻 🎵 🍬 😊 😱 😂 🌙
+❄️ ⛄ 😊 ☕ 🔥 🏠 😌 💕
+❄️ 🌨️ 😢 🏠 ☕ 🔥 😌 😴
+🐉 😱 🏃 ⚔️ 🛡️ 💥 🤕 🏥
+🐉 😱 🔥 ⚔️ 💪 🛡️ 👏 🏆</textarea>
+          </div>
+          <div class="config-full" style="display:flex;gap:0.5rem;">
+            <button id="btnTrain" class="btn btn-primary" onclick="startTraining()">▶ Train</button>
+            <button id="btnStop" class="btn btn-stop" onclick="stopTraining()" style="display:none;">■ Stop</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="dot" id="dotTrain"></span> Training Log</div>
+      <div class="card-body">
+        <div id="logOutput">Ready. Press Train to begin.
+</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+    <div class="card">
+      <div class="card-head">Stats</div>
+      <div class="card-body">
+        <div class="stats-row">
+          <div class="stat"><div class="stat-val" id="statStep">—</div><div class="stat-label">Step</div></div>
+          <div class="stat"><div class="stat-val" id="statLoss">—</div><div class="stat-label">Loss</div></div>
+          <div class="stat"><div class="stat-val" id="statParams">—</div><div class="stat-label">Params</div></div>
+          <div class="stat"><div class="stat-val" id="statVocab">—</div><div class="stat-label">Vocab</div></div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">Loss Curve</div>
+      <div class="card-body">
+        <canvas id="lossCanvas"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="dot" id="dotSample"></span> Auto-generated Stories</div>
+      <div class="card-body">
+        <div class="samples-grid" id="samplesGrid">
+          <span style="color:var(--text-dim);font-size:0.75rem;">Samples appear after training.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== INFERENCE PLAYGROUND ===== -->
+<div class="infer-section" id="inferSection">
+  <div style="max-width:1200px;margin:0 auto;padding:0 2rem 3rem;">
+    <div class="card">
+      <div class="card-head" style="font-size:1rem;text-transform:none;letter-spacing:0;">🧠 Predict Next Token — Continue Your Emoji Story</div>
+      <div class="card-body">
+        <div id="vocabHint" class="vocab-hint"></div>
+        <div class="infer-input-row">
+          <input id="inferInput" type="text" placeholder="Enter emoji prompt (space-separated)… e.g. 🌅 🐓 🎵" />
+          <button class="btn btn-primary" onclick="runInference()" id="btnInfer" style="margin-top:0;white-space:nowrap;">Continue ▶</button>
+        </div>
+        <div class="story-display" id="storyDisplay">
+          <span style="color:var(--text-dim);font-size:1rem;">Train the model first, then enter a few emoji above (separated by spaces) and press Continue to watch the model predict the next token one at a time.</span>
+        </div>
+        <div class="prob-bar-container" id="probBars" style="display:none;">
+          <div class="prob-bar-title">Current Prediction — Top Token Probabilities</div>
+          <div id="probContent"></div>
+          <div class="infer-step-label" id="inferStepLabel"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== PRNG =====
+class SeededRandom {
+  constructor(seed) { this.state = seed; }
+  next() { this.state = (this.state * 1664525 + 1013904223) & 0xFFFFFFFF; return (this.state >>> 0) / 0xFFFFFFFF; }
+  gauss(mu = 0, sigma = 1) {
+    let u, v, s;
+    do { u = this.next() * 2 - 1; v = this.next() * 2 - 1; s = u*u + v*v; } while (s >= 1 || s === 0);
+    return mu + sigma * u * Math.sqrt(-2 * Math.log(s) / s);
+  }
+  shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(this.next() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } }
+  choices(pop, weights) {
+    let total = 0; for (let i = 0; i < weights.length; i++) total += weights[i];
+    let r = this.next() * total;
+    for (let i = 0; i < pop.length; i++) { r -= weights[i]; if (r <= 0) return pop[i]; }
+    return pop[pop.length - 1];
+  }
+}
+
+// ===== Autograd =====
+let _gen = 0;
+class Value {
+  constructor(data, children = [], local_grads = []) {
+    this.data = data; this.grad = 0;
+    this._c0 = children[0]; this._c1 = children[1];
+    this._lg0 = local_grads[0]; this._lg1 = local_grads[1];
+    this._nch = children.length; this._gen = 0;
+  }
+  add(other) {
+    if (other instanceof Value) return new Value(this.data + other.data, [this, other], [1, 1]);
+    return new Value(this.data + other, [this], [1]);
+  }
+  mul(other) {
+    if (other instanceof Value) return new Value(this.data * other.data, [this, other], [other.data, this.data]);
+    return new Value(this.data * other, [this], [other]);
+  }
+  pow(other) { return new Value(this.data ** other, [this], [other * this.data ** (other - 1)]); }
+  log() { return new Value(Math.log(this.data), [this], [1 / this.data]); }
+  exp() { const e = Math.exp(this.data); return new Value(e, [this], [e]); }
+  relu() { return new Value(Math.max(0, this.data), [this], [+(this.data > 0)]); }
+  neg() { return new Value(-this.data, [this], [-1]); }
+  sub(other) { return this.add(other instanceof Value ? other.neg() : -other); }
+  div(other) { return this.mul(other instanceof Value ? other.pow(-1) : 1 / other); }
+  backward() {
+    const gen = ++_gen; const topo = [];
+    function build_topo(v) {
+      if (v._gen === gen) return; v._gen = gen;
+      if (v._nch >= 1) build_topo(v._c0);
+      if (v._nch === 2) build_topo(v._c1);
+      topo.push(v);
+    }
+    build_topo(this); this.grad = 1;
+    for (let i = topo.length - 1; i >= 0; --i) {
+      const v = topo[i], g = v.grad;
+      if (v._nch >= 1) v._c0.grad += v._lg0 * g;
+      if (v._nch === 2) v._c1.grad += v._lg1 * g;
+    }
+  }
+}
+
+// ===== GPT primitives =====
+const sum = (arr) => arr.reduce((a, b) => a.add(b));
+const zip = (a, b) => a.map((ai, i) => [ai, b[i]]);
+function linear(x, w) { return w.map(wo => sum(wo.map((wi, i) => wi.mul(x[i])))); }
+function softmax(logits) {
+  const max_val = Math.max(...logits.map(v => v.data));
+  const exps = logits.map(v => v.sub(max_val).exp());
+  const total = sum(exps);
+  return exps.map(e => e.div(total));
+}
+function rmsnorm(x) {
+  const ms = sum(x.map(xi => xi.mul(xi))).mul(1 / x.length);
+  const s = ms.add(1e-5).pow(-0.5);
+  return x.map(xi => xi.mul(s));
+}
+
+// ===== UI =====
+const $ = id => document.getElementById(id);
+let running = false, stopFlag = false;
+const lossHistory = [];
+let _trained = null;
+
+function log(html) {
+  const el = $('logOutput');
+  el.innerHTML += html + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
+function drawLossChart() {
+  const canvas = $('lossCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  ctx.clearRect(0, 0, W, H);
+  if (lossHistory.length < 2) return;
+  const minL = Math.min(...lossHistory), maxL = Math.max(...lossHistory);
+  const range = maxL - minL || 1;
+  const pad = { t: 10, b: 20, l: 40, r: 10 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  ctx.strokeStyle = '#1e1e2e'; ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (ph * i / 4);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#555'; ctx.font = '9px JetBrains Mono';
+    ctx.fillText((maxL - range * i / 4).toFixed(1), 2, y + 3);
+  }
+  const grad = ctx.createLinearGradient(0, pad.t, 0, H - pad.b);
+  grad.addColorStop(0, '#ff4466'); grad.addColorStop(0.5, '#ffaa33'); grad.addColorStop(1, '#00e5a0');
+  ctx.strokeStyle = grad; ctx.lineWidth = 1.5; ctx.beginPath();
+  for (let i = 0; i < lossHistory.length; i++) {
+    const x = pad.l + (i / (lossHistory.length - 1)) * pw;
+    const y = pad.t + ((maxL - lossHistory[i]) / range) * ph;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,229,160,0.15)'; ctx.lineWidth = 4; ctx.beginPath();
+  for (let i = 0; i < lossHistory.length; i++) {
+    const x = pad.l + (i / (lossHistory.length - 1)) * pw;
+    const y = pad.t + ((maxL - lossHistory[i]) / range) * ph;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function lossColor(v) { return v > 3 ? 'loss-bad' : v > 1.5 ? 'loss-ok' : 'loss-good'; }
+
+function tokenizeEmojiLine(line) {
+  return line.trim().split(/\s+/).filter(t => t.length > 0);
+}
+
+// ===== Training =====
+async function startTraining() {
+  if (running) return;
+  running = true; stopFlag = false;
+  $('btnTrain').disabled = true;
+  $('btnStop').style.display = '';
+  $('logOutput').innerHTML = '';
+  $('samplesGrid').innerHTML = '<span style="color:var(--text-dim);font-size:0.75rem;">Training…</span>';
+  $('inferSection').classList.remove('visible');
+  lossHistory.length = 0;
+
+  const rng = new SeededRandom(42);
+  const n_embd = +$('cfgEmbd').value;
+  const n_head = +$('cfgHeads').value;
+  const n_layer = +$('cfgLayers').value;
+  const block_size = +$('cfgBlock').value;
+  const num_steps = +$('cfgSteps').value;
+  const learning_rate = +$('cfgLR').value;
+  const head_dim = Math.floor(n_embd / n_head);
+  const scale = 1 / head_dim ** 0.5;
+  const beta1 = 0.85, beta2 = 0.99, eps_adam = 1e-8;
+
+  const rawLines = $('cfgData').value.trim().split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const docs = rawLines.map(tokenizeEmojiLine);
+  rng.shuffle(docs);
+
+  const tokenSet = [...new Set(docs.flat())].sort();
+  const token_to_id = new Map(tokenSet.map((t, i) => [t, i]));
+  const BOS = tokenSet.length;
+  const vocab_size = tokenSet.length + 1;
+
+  log(`<span class="info">stories: ${docs.length}  vocab: ${vocab_size} (${tokenSet.length} emoji + ⏹end)</span>`);
+  log(`<span class="info">embd: ${n_embd}  heads: ${n_head}  layers: ${n_layer}  block: ${block_size}</span>`);
+
+  const matrix = (nout, nin, std = 0.08) =>
+    Array.from({ length: nout }, () => Array.from({ length: nin }, () => new Value(rng.gauss(0, std))));
+
+  const state_dict = {
+    wte: matrix(vocab_size, n_embd), wpe: matrix(block_size, n_embd), lm_head: matrix(vocab_size, n_embd),
+  };
+  for (let i = 0; i < n_layer; i++) {
+    state_dict[`layer${i}.attn_wq`] = matrix(n_embd, n_embd);
+    state_dict[`layer${i}.attn_wk`] = matrix(n_embd, n_embd);
+    state_dict[`layer${i}.attn_wv`] = matrix(n_embd, n_embd);
+    state_dict[`layer${i}.attn_wo`] = matrix(n_embd, n_embd);
+    state_dict[`layer${i}.mlp_fc1`] = matrix(4 * n_embd, n_embd);
+    state_dict[`layer${i}.mlp_fc2`] = matrix(n_embd, 4 * n_embd);
+  }
+  const params = Object.values(state_dict).flat(Infinity);
+  log(`<span class="info">params: ${params.length.toLocaleString()}</span>`);
+  $('statParams').textContent = params.length.toLocaleString();
+  $('statVocab').textContent = vocab_size;
+
+  const m_buf = new Float64Array(params.length);
+  const v_buf = new Float64Array(params.length);
+
+  function gpt(token_id, pos_id, keys, values) {
+    const tok_emb = state_dict['wte'][token_id];
+    const pos_emb = state_dict['wpe'][pos_id];
+    let x = zip(tok_emb, pos_emb).map(([t, p]) => t.add(p));
+    x = rmsnorm(x);
+    for (let li = 0; li < n_layer; li++) {
+      let x_residual = x; x = rmsnorm(x);
+      const q = linear(x, state_dict[`layer${li}.attn_wq`]);
+      const k = linear(x, state_dict[`layer${li}.attn_wk`]);
+      const v = linear(x, state_dict[`layer${li}.attn_wv`]);
+      keys[li].push(k); values[li].push(v);
+      const x_attn = [];
+      for (let h = 0; h < n_head; h++) {
+        const hs = h * head_dim;
+        const q_h = q.slice(hs, hs + head_dim);
+        const k_h = keys[li].map(ki => ki.slice(hs, hs + head_dim));
+        const v_h = values[li].map(vi => vi.slice(hs, hs + head_dim));
+        const attn_logits = k_h.map(kt => sum(zip(q_h, kt).map(([qi, ki]) => qi.mul(ki))).mul(scale));
+        const attn_weights = softmax(attn_logits);
+        for (let j = 0; j < head_dim; j++)
+          x_attn.push(sum(attn_weights.map((aw, t) => aw.mul(v_h[t][j]))));
+      }
+      x = linear(x_attn, state_dict[`layer${li}.attn_wo`]);
+      x = x.map((a, i) => a.add(x_residual[i]));
+      x_residual = x; x = rmsnorm(x);
+      x = linear(x, state_dict[`layer${li}.mlp_fc1`]);
+      x = x.map(xi => xi.relu());
+      x = linear(x, state_dict[`layer${li}.mlp_fc2`]);
+      x = x.map((a, i) => a.add(x_residual[i]));
+    }
+    return linear(x, state_dict['lm_head']);
+  }
+
+  // Training loop
+  for (let step = 0; step < num_steps; step++) {
+    if (stopFlag) { log('<span class="info">⏹ Stopped.</span>'); break; }
+    const doc = docs[step % docs.length];
+    const tokens = [BOS, ...doc.map(t => token_to_id.get(t)), BOS];
+    const n = Math.min(block_size, tokens.length - 1);
+    const keys = Array.from({ length: n_layer }, () => []);
+    const values_kv = Array.from({ length: n_layer }, () => []);
+    const losses = [];
+    for (let pos_id = 0; pos_id < n; pos_id++) {
+      const logits = gpt(tokens[pos_id], pos_id, keys, values_kv);
+      const probs = softmax(logits);
+      losses.push(probs[tokens[pos_id + 1]].log().neg());
+    }
+    const loss = sum(losses).mul(1 / n);
+    loss.backward();
+    const lr_t = learning_rate * (1 - step / num_steps);
+    const bc1 = 1 - beta1 ** (step + 1), bc2 = 1 - beta2 ** (step + 1);
+    for (let i = 0; i < params.length; i++) {
+      const p = params[i];
+      m_buf[i] = beta1 * m_buf[i] + (1 - beta1) * p.grad;
+      v_buf[i] = beta2 * v_buf[i] + (1 - beta2) * p.grad ** 2;
+      p.data -= lr_t * (m_buf[i] / bc1) / (Math.sqrt(v_buf[i] / bc2) + eps_adam);
+      p.grad = 0;
+    }
+    lossHistory.push(loss.data);
+    $('statStep').textContent = `${step + 1}/${num_steps}`;
+    $('statLoss').textContent = loss.data.toFixed(3);
+    $('progressFill').style.width = ((step + 1) / num_steps * 100).toFixed(0) + '%';
+    if ((step + 1) % Math.max(1, Math.floor(num_steps / 50)) === 0 || step === 0 || step === num_steps - 1) {
+      log(`<span class="step">step ${String(step+1).padStart(4)}/${num_steps}</span>  loss <span class="${lossColor(loss.data)}">${loss.data.toFixed(4)}</span>`);
+      drawLossChart();
+    }
+    if (step % 2 === 0) await new Promise(r => setTimeout(r, 0));
+  }
+
+  // Auto-generate sample stories
+  if (!stopFlag || lossHistory.length > 10) {
+    log('<span class="info">\n--- sample stories ---</span>');
+    $('samplesGrid').innerHTML = '';
+    const token_ids = Array.from({ length: vocab_size }, (_, i) => i);
+    for (let si = 0; si < 8; si++) {
+      const keys = Array.from({ length: n_layer }, () => []);
+      const values_kv = Array.from({ length: n_layer }, () => []);
+      let tid = BOS; const sample = [];
+      for (let pos_id = 0; pos_id < block_size; pos_id++) {
+        const logits = gpt(tid, pos_id, keys, values_kv);
+        const probs = softmax(logits.map(l => l.div(+$('cfgTemp').value)));
+        tid = rng.choices(token_ids, probs.map(p => p.data));
+        if (tid === BOS) break;
+        sample.push(tokenSet[tid]);
+      }
+      const story = sample.join(' ');
+      log(`<span class="sample-line">  ${String(si+1).padStart(2)}: ${story}</span>`);
+      const tag = document.createElement('span');
+      tag.className = 'sample-tag'; tag.textContent = story;
+      $('samplesGrid').appendChild(tag);
+    }
+  }
+
+  drawLossChart();
+  log('<span class="info">✅ Training complete — scroll down to the inference playground ⬇</span>');
+
+  _trained = { state_dict, tokenSet, token_to_id, BOS, vocab_size, n_layer, block_size, rng, gpt };
+
+  $('inferSection').classList.add('visible');
+  $('vocabHint').innerHTML = `<strong>Vocabulary (${tokenSet.length} emoji + ⏹ end token):</strong><br><span class="emoji-list">${tokenSet.join('  ')}  ⏹</span>`;
+  $('storyDisplay').innerHTML = '<span style="color:var(--text-dim);font-size:1rem;">Enter a few emoji above (separated by spaces), then press Continue to watch the model predict the next token one by one, until it outputs ⏹ to end the story.</span>';
+  $('inferInput').focus();
+  $('inferSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  running = false;
+  $('btnTrain').disabled = false;
+  $('btnStop').style.display = 'none';
+}
+
+function stopTraining() { stopFlag = true; }
+
+// ===== INFERENCE: predict next token, one at a time =====
+let inferRunning = false;
+
+async function runInference() {
+  if (!_trained || inferRunning) return;
+  inferRunning = true;
+  $('btnInfer').disabled = true;
+
+  const { state_dict, tokenSet, token_to_id, BOS, vocab_size, n_layer, block_size, rng, gpt } = _trained;
+  const token_ids = Array.from({ length: vocab_size }, (_, i) => i);
+  const temperature = +$('cfgTemp').value;
+
+  // Parse prompt
+  const promptTokens = tokenizeEmojiLine($('inferInput').value);
+  const validPrompt = promptTokens.filter(t => token_to_id.has(t));
+  const unknownTokens = promptTokens.filter(t => !token_to_id.has(t));
+  if (unknownTokens.length > 0) {
+    log(`<span class="loss-bad">⚠ Unknown tokens (not in vocab): ${unknownTokens.join(' ')}</span>`);
+  }
+  if (validPrompt.length === 0) {
+    log(`<span class="loss-bad">⚠ No valid tokens in prompt. Using BOS only.</span>`);
+  }
+
+  const promptIds = [BOS, ...validPrompt.map(t => token_to_id.get(t))];
+
+  // Render prompt
+  const display = $('storyDisplay');
+  display.innerHTML = '';
+  for (const t of validPrompt) {
+    const sp = document.createElement('span');
+    sp.className = 'tok-prompt'; sp.textContent = t + ' ';
+    display.appendChild(sp);
+  }
+  const cursor = document.createElement('span');
+  cursor.className = 'tok-cursor';
+  display.appendChild(cursor);
+
+  $('probBars').style.display = 'block';
+  $('probContent').innerHTML = '<div style="color:var(--text-dim);font-size:0.75rem;">Processing prompt…</div>';
+  $('inferStepLabel').textContent = '';
+
+  await new Promise(r => setTimeout(r, 100));
+
+  // Feed prompt through model to build KV cache
+  const keys = Array.from({ length: n_layer }, () => []);
+  const values_kv = Array.from({ length: n_layer }, () => []);
+  for (let i = 0; i < promptIds.length - 1; i++) {
+    gpt(promptIds[i], i, keys, values_kv);
+  }
+
+  // Generate token by token
+  let lastId = promptIds[promptIds.length - 1];
+  let posId = promptIds.length - 1;
+  const maxGen = block_size - promptIds.length;
+  let genCount = 0;
+
+  for (let gi = 0; gi < maxGen; gi++) {
+    const logits = gpt(lastId, posId, keys, values_kv);
+    const probs = softmax(logits.map(l => l.div(temperature)));
+    const probData = probs.map(p => p.data);
+    const nextId = rng.choices(token_ids, probData);
+
+    genCount++;
+    $('inferStepLabel').textContent = `generation step ${genCount}: model sees ${posId + 1} tokens → predicts next`;
+
+    // Show probability bars
+    showProbBars(probData, tokenSet, BOS, nextId);
+
+    // Pause for drama
+    await new Promise(r => setTimeout(r, 500));
+
+    if (nextId === BOS) {
+      // END token
+      cursor.remove();
+      const endSp = document.createElement('span');
+      endSp.className = 'tok-gen';
+      endSp.textContent = '⏹';
+      endSp.style.opacity = '0.5';
+      endSp.style.fontSize = '1.5rem';
+      display.appendChild(endSp);
+      $('inferStepLabel').textContent = `generation step ${genCount}: model predicted ⏹ end token — story complete!`;
+      log(`<span class="info">Inference: ${genCount} tokens generated, model chose ⏹ end.</span>`);
+      break;
+    }
+
+    // Append token with pop animation
+    cursor.remove();
+    const sp = document.createElement('span');
+    sp.className = 'tok-gen';
+    sp.textContent = tokenSet[nextId] + ' ';
+    display.appendChild(sp);
+    display.appendChild(cursor);
+
+    lastId = nextId;
+    posId++;
+
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  if (cursor.parentNode) {
+    cursor.remove();
+    $('inferStepLabel').textContent += ' (max length reached)';
+  }
+
+  inferRunning = false;
+  $('btnInfer').disabled = false;
+}
+
+function showProbBars(probData, tokenSet, BOS, chosenId) {
+  const indexed = probData.map((p, i) => ({ p, i }));
+  indexed.sort((a, b) => b.p - a.p);
+  const top = indexed.slice(0, 7);
+  if (!top.find(t => t.i === chosenId)) {
+    top.pop();
+    top.push(indexed.find(t => t.i === chosenId));
+  }
+
+  const el = $('probContent');
+  el.innerHTML = '';
+  const maxProb = Math.max(...top.map(t => t.p));
+
+  for (const t of top) {
+    const label = t.i === BOS ? '⏹' : tokenSet[t.i];
+    const pct = (t.p * 100).toFixed(1);
+    const barW = (t.p / maxProb * 100).toFixed(1);
+    const isChosen = t.i === chosenId;
+    const hue = t.i === BOS ? '0' : `${(t.i * 47) % 360}`;
+    const fillColor = isChosen ? 'var(--accent)' : `hsl(${hue}, 55%, 50%)`;
+
+    const row = document.createElement('div');
+    row.className = 'prob-row' + (isChosen ? ' prob-chosen' : '');
+    row.innerHTML = `
+      <div class="prob-emoji">${label}</div>
+      <div class="prob-track"><div class="prob-fill" style="width:${barW}%;background:${fillColor};"></div></div>
+      <div class="prob-pct">${pct}%</div>
+      ${isChosen ? '<span style="font-size:0.6rem;color:var(--accent);margin-left:0.3rem;">← sampled</span>' : ''}
+    `;
+    el.appendChild(row);
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.activeElement === $('inferInput')) {
+    e.preventDefault();
+    runInference();
+  }
+});
+</script>
+</body>
+</html>
