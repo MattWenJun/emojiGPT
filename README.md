@@ -78,7 +78,7 @@ If you find this project interesting, give it a **star** — it helps others dis
 
 I write about AI, startups, and psychology.
 
-- **WeChat (公众号):** MindCode
+- **WeChat public account:** MindCode
 - **X:** [@moneygalaxy](https://x.com/moneygalaxy)
 - **Substack:** [mindcodeplus](https://substack.com/@mindcodeplus)
 
