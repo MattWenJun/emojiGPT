@@ -10,7 +10,7 @@
 
 The other half of the magic is **you**. Your brain automatically unpacks each emoji into a rich scene — the hospital visit, the injection, the prayer, the relief. The model writes a compressed story; your mind decompresses it into a full one.
 
-This combination — emoji as dimensionality reduction + human imagination as the decompressor — is what makes a ~4K-parameter model capable of genuine story generation.
+This is where AI meets cognitive psychology: emoji as dimensionality reduction + the human brain as the decompressor — together, they make a ~4K-parameter model capable of genuine story generation.
 
 ---
 
