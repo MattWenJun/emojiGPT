@@ -27,7 +27,7 @@ The model trains on ~170 emoji stories (editable!), learning patterns like "🌅
 
 ## Quick Start
 
-1. Open `index.html` in your browser
+1. Download `index.html` and open it in your browser — that's it, just one file
 2. Click **▶ Train** (takes ~30 seconds with default settings)
 3. Scroll down to the inference playground
 4. Type a few emoji (e.g. `🌅 🐓 🎵`) and press **Continue ▶**
