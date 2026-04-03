@@ -1,8 +1,18 @@
 # emojiGPT 🧠✨
 
-Train a tiny GPT on emoji stories — and watch it generate new ones token by token — **all in your browser**.
+### Possibly the world's smallest GPT that can write stories.
 
-No server, no dependencies, no install. Just open `index.html`.
+~4,000 parameters. Trains in 30 seconds. Runs entirely in your browser. No server, no dependencies, no install.
+
+---
+
+**The key insight:** Emoji are a radically compressed vocabulary. A single 🏥 carries the meaning that would take an entire sentence in English. By training on emoji sequences instead of text, we collapse the problem space by orders of magnitude — making it possible for a mass GPT to learn and generate coherent narrative arcs like "🤕 → 🏥 → 💉 → 🙏 → 😊".
+
+The other half of the magic is **you**. Your brain automatically unpacks each emoji into a rich scene — the hospital visit, the injection, the prayer, the relief. The model writes a compressed story; your mind decompresses it into a full one.
+
+This combination — emoji as dimensionality reduction + human imagination as the decompressor — is what makes a ~4K-parameter model capable of genuine story generation.
+
+---
 
 ## What is this?
 
