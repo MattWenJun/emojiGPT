@@ -6,7 +6,7 @@
 
 ## What is this?
 
-A complete, from-scratch GPT implementation running entirely in the browser:
+A minimal GPT implementation running entirely in the browser — autograd, transformer, and training loop built from basic primitives, zero dependencies:
 
 - **Autograd engine** — full backpropagation, built from scalar `Value` nodes
 - **Transformer architecture** — multi-head self-attention, RMSNorm, MLP, positional embeddings
