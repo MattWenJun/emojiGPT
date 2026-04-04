@@ -830,7 +830,7 @@ const DATASETS = {
   custom:  { tokenizer: 'auto',   label: 'Custom',  hint: 'auto-detected tokenizer based on content' },
 };
 
-let currentMode = '';
+let currentMode = 'emoji';
 let isFirstLoad = true;
 let customText = '';
 
@@ -854,14 +854,14 @@ function detectTokenizer(text) {
 }
 
 function getEffectiveTokenizer() {
-  const mode = DATASETS[currentMode] || DATASETS.emoji;
+  const mode = DATASETS[currentMode];
   if (mode.tokenizer !== 'auto') return mode.tokenizer;
   const text = document.getElementById('cfgData').value;
   return detectTokenizer(text);
 }
 
 function switchDataset(mode) {
-  if (mode === currentMode && mode !== 'custom') return;
+  if (mode === currentMode && mode !== 'custom' && !isFirstLoad) return;
   const prevMode = currentMode;
   currentMode = mode;
 
@@ -1135,7 +1135,7 @@ async function startTraining() {
   const BOS = tokenSet.length;
   const vocab_size = tokenSet.length + 1;
 
-  const modeLabel = (DATASETS[currentMode] || DATASETS.emoji).label;
+  const modeLabel = DATASETS[currentMode].label;
   log(`<span class="info">mode: ${modeLabel}  tokenizer: ${tokenizerMode}</span>`);
   log(`<span class="info">stories: ${docs.length}  vocab: ${vocab_size} (${tokenSet.length} tokens + ⏹end)</span>`);
   log(`<span class="info">embd: ${n_embd}  heads: ${n_head}  layers: ${n_layer}  block: ${block_size}</span>`);
@@ -1267,15 +1267,14 @@ async function startTraining() {
 
   // Update inference section
   const modeLower = currentMode;
-  const _ds = DATASETS[currentMode] || DATASETS.emoji;
-  $('inferModeBadge').textContent = _ds.label;
+  $('inferModeBadge').textContent = DATASETS[currentMode].label;
   $('inferModeBadge').className = 'mode-badge ' + modeLower;
   $('inferSection').classList.add('visible');
 
   // Vocab hint
   const displayTokens = tokenSet.slice(0, 80).join(sep || ' ');
   const extra = tokenSet.length > 80 ? ` … +${tokenSet.length - 80} more` : '';
-  $('vocabHint').innerHTML = `<strong>Vocabulary (${tokenSet.length} tokens + ⏹ end)</strong> · ${_ds.hint}<br><span class="token-list">${displayTokens}${extra}  ⏹</span>`;
+  $('vocabHint').innerHTML = `<strong>Vocabulary (${tokenSet.length} tokens + ⏹ end)</strong> · ${DATASETS[currentMode].hint}<br><span class="token-list">${displayTokens}${extra}  ⏹</span>`;
 
   // Set inference placeholder by mode
   const placeholders = {
