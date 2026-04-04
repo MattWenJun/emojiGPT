@@ -181,52 +181,47 @@
 
 <header>
   <h1>emojiGPT</h1>
-  <span class="tag" data-i18n="headerTag">train a tiny GPT on emoji stories · watch it generate new ones token by token · all in your browser</span>
-  <button id="langToggle" onclick="toggleLang()" style="
-    margin-left:auto; font-family:var(--mono); font-size:0.7rem; padding:0.25rem 0.6rem;
-    background:var(--surface2); border:1px solid var(--border); color:var(--text-dim);
-    border-radius:3px; cursor:pointer; transition:all 0.15s;
-  " onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">中文</button>
+  <span class="tag">train a tiny GPT on emoji stories · watch it generate new ones token by token · all in your browser</span>
 </header>
 
 <div class="container">
   <!-- Left column -->
   <div style="display:flex;flex-direction:column;gap:1.5rem;">
     <div class="card">
-      <div class="card-head" data-i18n="configuration">Configuration</div>
+      <div class="card-head">Configuration</div>
       <div class="card-body">
         <div class="config-grid">
           <div class="config-item">
-            <label data-i18n="lblEmbd">Embedding dim</label>
+            <label>Embedding dim</label>
             <input id="cfgEmbd" type="number" value="16" min="4" max="64" step="4">
           </div>
           <div class="config-item">
-            <label data-i18n="lblHeads">Attention heads</label>
+            <label>Attention heads</label>
             <input id="cfgHeads" type="number" value="4" min="1" max="16">
           </div>
           <div class="config-item">
-            <label data-i18n="lblLayers">Layers</label>
+            <label>Layers</label>
             <input id="cfgLayers" type="number" value="1" min="1" max="4">
           </div>
           <div class="config-item">
-            <label data-i18n="lblBlock">Block size</label>
+            <label>Block size</label>
             <input id="cfgBlock" type="number" value="32" min="4" max="64">
           </div>
           <div class="config-item">
-            <label data-i18n="lblSteps">Train steps</label>
+            <label>Train steps</label>
             <input id="cfgSteps" type="number" value="2000" min="10" max="10000" step="10">
           </div>
           <div class="config-item">
-            <label data-i18n="lblLR">Learning rate</label>
+            <label>Learning rate</label>
             <input id="cfgLR" type="number" value="0.01" min="0.0001" max="0.1" step="0.001">
           </div>
           <div class="config-item">
-            <label data-i18n="lblTemp">Temperature</label>
+            <label>Temperature</label>
             <input id="cfgTemp" type="number" value="0.5" min="0.1" max="2.0" step="0.1">
           </div>
           <div class="config-item config-full">
-            <label data-i18n="lblStories">Training stories — one emoji story per line, spaces between tokens</label>
-            <span data-i18n="lblStoriesHint" style="font-size:0.6rem;color:var(--text-dim);margin-bottom:0.15rem;">Edit freely — write your own stories or use AI to generate them, then paste here.</span>
+            <label>Training stories — one emoji story per line, spaces between tokens</label>
+            <span style="font-size:0.6rem;color:var(--text-dim);margin-bottom:0.15rem;">Edit freely — write your own stories or use AI to generate them, then paste here.</span>
             <textarea id="cfgData">🌅 🐓 🎵 ☕ 🍳 😋 🚶 🏢
 🌅 🐓 🎵 ☕ 🥐 😋 📖 🏫
 🌅 🐓 🎵 🍵 🍳 😋 🚗 🏢
@@ -460,17 +455,17 @@
 🐉 😱 🔥 ⚔️ 💪 🛡️ 👏 🏆</textarea>
           </div>
           <div class="config-full" style="display:flex;gap:0.5rem;">
-            <button id="btnTrain" class="btn btn-primary" onclick="startTraining()" data-i18n="btnTrain">▶ Train</button>
-            <button id="btnStop" class="btn btn-stop" onclick="stopTraining()" style="display:none;" data-i18n="btnStop">■ Stop</button>
+            <button id="btnTrain" class="btn btn-primary" onclick="startTraining()">▶ Train</button>
+            <button id="btnStop" class="btn btn-stop" onclick="stopTraining()" style="display:none;">■ Stop</button>
           </div>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-head"><span class="dot" id="dotTrain"></span> <span data-i18n="trainingLog">Training Log</span></div>
+      <div class="card-head"><span class="dot" id="dotTrain"></span> Training Log</div>
       <div class="card-body">
-        <div id="logOutput"><span data-i18n="logReady">Ready. Press Train to begin.</span>
+        <div id="logOutput">Ready. Press Train to begin.
 </div>
       </div>
     </div>
@@ -479,30 +474,30 @@
   <!-- Right column -->
   <div style="display:flex;flex-direction:column;gap:1.5rem;">
     <div class="card">
-      <div class="card-head" data-i18n="stats">Stats</div>
+      <div class="card-head">Stats</div>
       <div class="card-body">
         <div class="stats-row">
-          <div class="stat"><div class="stat-val" id="statStep">—</div><div class="stat-label" data-i18n="statStep">Step</div></div>
-          <div class="stat"><div class="stat-val" id="statLoss">—</div><div class="stat-label" data-i18n="statLoss">Loss</div></div>
-          <div class="stat"><div class="stat-val" id="statParams">—</div><div class="stat-label" data-i18n="statParams">Params</div></div>
-          <div class="stat"><div class="stat-val" id="statVocab">—</div><div class="stat-label" data-i18n="statVocab">Vocab</div></div>
+          <div class="stat"><div class="stat-val" id="statStep">—</div><div class="stat-label">Step</div></div>
+          <div class="stat"><div class="stat-val" id="statLoss">—</div><div class="stat-label">Loss</div></div>
+          <div class="stat"><div class="stat-val" id="statParams">—</div><div class="stat-label">Params</div></div>
+          <div class="stat"><div class="stat-val" id="statVocab">—</div><div class="stat-label">Vocab</div></div>
         </div>
         <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-head" data-i18n="lossCurve">Loss Curve</div>
+      <div class="card-head">Loss Curve</div>
       <div class="card-body">
         <canvas id="lossCanvas"></canvas>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-head"><span class="dot" id="dotSample"></span> <span data-i18n="autoStories">Auto-generated Stories</span></div>
+      <div class="card-head"><span class="dot" id="dotSample"></span> Auto-generated Stories</div>
       <div class="card-body">
         <div class="samples-grid" id="samplesGrid">
-          <span style="color:var(--text-dim);font-size:0.75rem;" data-i18n="samplesHint">Samples appear after training.</span>
+          <span style="color:var(--text-dim);font-size:0.75rem;">Samples appear after training.</span>
         </div>
       </div>
     </div>
@@ -513,18 +508,18 @@
 <div class="infer-section" id="inferSection">
   <div style="max-width:1200px;margin:0 auto;padding:0 2rem 3rem;">
     <div class="card">
-      <div class="card-head" style="font-size:1rem;text-transform:none;letter-spacing:0;" data-i18n="inferTitle">🧠 Predict Next Token — Continue Your Emoji Story</div>
+      <div class="card-head" style="font-size:1rem;text-transform:none;letter-spacing:0;">🧠 Predict Next Token — Continue Your Emoji Story</div>
       <div class="card-body">
         <div id="vocabHint" class="vocab-hint"></div>
         <div class="infer-input-row">
-          <input id="inferInput" type="text" data-i18n-placeholder="inferPlaceholder" placeholder="Enter emoji prompt (space-separated)… e.g. 🌅 🐓 🎵" />
-          <button class="btn btn-primary" onclick="runInference()" id="btnInfer" style="margin-top:0;white-space:nowrap;" data-i18n="btnContinue">Continue ▶</button>
+          <input id="inferInput" type="text" placeholder="Enter emoji prompt (space-separated)… e.g. 🌅 🐓 🎵" />
+          <button class="btn btn-primary" onclick="runInference()" id="btnInfer" style="margin-top:0;white-space:nowrap;">Continue ▶</button>
         </div>
         <div class="story-display" id="storyDisplay">
-          <span style="color:var(--text-dim);font-size:1rem;" data-i18n="inferHint">Train the model first, then enter a few emoji above (separated by spaces) and press Continue to watch the model predict the next token one at a time.</span>
+          <span style="color:var(--text-dim);font-size:1rem;">Train the model first, then enter a few emoji above (separated by spaces) and press Continue to watch the model predict the next token one at a time.</span>
         </div>
         <div class="prob-bar-container" id="probBars" style="display:none;">
-          <div class="prob-bar-title" data-i18n="probTitle">Current Prediction — Top Token Probabilities</div>
+          <div class="prob-bar-title">Current Prediction — Top Token Probabilities</div>
           <div id="probContent"></div>
           <div class="infer-step-label" id="inferStepLabel"></div>
         </div>
@@ -673,7 +668,7 @@ async function startTraining() {
   $('btnTrain').disabled = true;
   $('btnStop').style.display = '';
   $('logOutput').innerHTML = '';
-  $('samplesGrid').innerHTML = `<span style="color:var(--text-dim);font-size:0.75rem;">${t('training')}</span>`;
+  $('samplesGrid').innerHTML = '<span style="color:var(--text-dim);font-size:0.75rem;">Training…</span>';
   $('inferSection').classList.remove('visible');
   lossHistory.length = 0;
 
@@ -757,7 +752,7 @@ async function startTraining() {
 
   // Training loop
   for (let step = 0; step < num_steps; step++) {
-    if (stopFlag) { log(`<span class="info">${t('stopped')}</span>`); break; }
+    if (stopFlag) { log('<span class="info">⏹ Stopped.</span>'); break; }
     const doc = docs[step % docs.length];
     const tokens = [BOS, ...doc.map(t => token_to_id.get(t)), BOS];
     const n = Math.min(block_size, tokens.length - 1);
@@ -793,7 +788,7 @@ async function startTraining() {
 
   // Auto-generate sample stories
   if (!stopFlag || lossHistory.length > 10) {
-    log(`<span class="info">\n${t('sampleStories')}</span>`);
+    log('<span class="info">\n--- sample stories ---</span>');
     $('samplesGrid').innerHTML = '';
     const token_ids = Array.from({ length: vocab_size }, (_, i) => i);
     for (let si = 0; si < 8; si++) {
@@ -816,13 +811,13 @@ async function startTraining() {
   }
 
   drawLossChart();
-  log(`<span class="info">${t('trainingComplete')}</span>`);
+  log('<span class="info">✅ Training complete — scroll down to the inference playground ⬇</span>');
 
   _trained = { state_dict, tokenSet, token_to_id, BOS, vocab_size, n_layer, block_size, rng, gpt };
 
   $('inferSection').classList.add('visible');
-  $('vocabHint').innerHTML = `${t('vocabHint', tokenSet.length)}<br><span class="emoji-list">${tokenSet.join('  ')}  ⏹</span>`;
-  $('storyDisplay').innerHTML = `<span style="color:var(--text-dim);font-size:1rem;">${t('inferReady')}</span>`;
+  $('vocabHint').innerHTML = `<strong>Vocabulary (${tokenSet.length} emoji + ⏹ end token):</strong><br><span class="emoji-list">${tokenSet.join('  ')}  ⏹</span>`;
+  $('storyDisplay').innerHTML = '<span style="color:var(--text-dim);font-size:1rem;">Enter a few emoji above (separated by spaces), then press Continue to watch the model predict the next token one by one, until it outputs ⏹ to end the story.</span>';
   $('inferInput').focus();
   $('inferSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -850,10 +845,10 @@ async function runInference() {
   const validPrompt = promptTokens.filter(t => token_to_id.has(t));
   const unknownTokens = promptTokens.filter(t => !token_to_id.has(t));
   if (unknownTokens.length > 0) {
-    log(`<span class="loss-bad">${t('unknownTokens', unknownTokens.join(' '))}</span>`);
+    log(`<span class="loss-bad">⚠ Unknown tokens (not in vocab): ${unknownTokens.join(' ')}</span>`);
   }
   if (validPrompt.length === 0) {
-    log(`<span class="loss-bad">${t('noValidTokens')}</span>`);
+    log(`<span class="loss-bad">⚠ No valid tokens in prompt. Using BOS only.</span>`);
   }
 
   const promptIds = [BOS, ...validPrompt.map(t => token_to_id.get(t))];
@@ -871,7 +866,7 @@ async function runInference() {
   display.appendChild(cursor);
 
   $('probBars').style.display = 'block';
-  $('probContent').innerHTML = `<div style="color:var(--text-dim);font-size:0.75rem;">${t('processingPrompt')}</div>`;
+  $('probContent').innerHTML = '<div style="color:var(--text-dim);font-size:0.75rem;">Processing prompt…</div>';
   $('inferStepLabel').textContent = '';
 
   await new Promise(r => setTimeout(r, 100));
@@ -896,7 +891,7 @@ async function runInference() {
     const nextId = rng.choices(token_ids, probData);
 
     genCount++;
-    $('inferStepLabel').textContent = t('genStep', genCount, posId + 1);
+    $('inferStepLabel').textContent = `generation step ${genCount}: model sees ${posId + 1} tokens → predicts next`;
 
     // Show probability bars
     showProbBars(probData, tokenSet, BOS, nextId);
@@ -913,8 +908,8 @@ async function runInference() {
       endSp.style.opacity = '0.5';
       endSp.style.fontSize = '1.5rem';
       display.appendChild(endSp);
-      $('inferStepLabel').textContent = t('genEnd', genCount);
-      log(`<span class="info">${t('inferDone', genCount)}</span>`);
+      $('inferStepLabel').textContent = `generation step ${genCount}: model predicted ⏹ end token — story complete!`;
+      log(`<span class="info">Inference: ${genCount} tokens generated, model chose ⏹ end.</span>`);
       break;
     }
 
@@ -934,7 +929,7 @@ async function runInference() {
 
   if (cursor.parentNode) {
     cursor.remove();
-    $('inferStepLabel').textContent += t('maxLength');
+    $('inferStepLabel').textContent += ' (max length reached)';
   }
 
   inferRunning = false;
@@ -968,7 +963,7 @@ function showProbBars(probData, tokenSet, BOS, chosenId) {
       <div class="prob-emoji">${label}</div>
       <div class="prob-track"><div class="prob-fill" style="width:${barW}%;background:${fillColor};"></div></div>
       <div class="prob-pct">${pct}%</div>
-      ${isChosen ? `<span style="font-size:0.6rem;color:var(--accent);margin-left:0.3rem;">${t('sampled')}</span>` : ''}
+      ${isChosen ? '<span style="font-size:0.6rem;color:var(--accent);margin-left:0.3rem;">← sampled</span>' : ''}
     `;
     el.appendChild(row);
   }
@@ -980,106 +975,6 @@ document.addEventListener('keydown', e => {
     runInference();
   }
 });
-
-// ===== i18n =====
-let currentLang = 'en';
-const i18n = {
-  en: {
-    headerTag: 'train a tiny GPT on emoji stories · watch it generate new ones token by token · all in your browser',
-    configuration: 'Configuration',
-    lblEmbd: 'Embedding dim', lblHeads: 'Attention heads', lblLayers: 'Layers',
-    lblBlock: 'Block size', lblSteps: 'Train steps', lblLR: 'Learning rate', lblTemp: 'Temperature',
-    lblStories: 'Training stories — one emoji story per line, spaces between tokens',
-    lblStoriesHint: 'Edit freely — write your own stories or use AI to generate them, then paste here.',
-    btnTrain: '▶ Train', btnStop: '■ Stop',
-    trainingLog: 'Training Log', logReady: 'Ready. Press Train to begin.',
-    stats: 'Stats', statStep: 'Step', statLoss: 'Loss', statParams: 'Params', statVocab: 'Vocab',
-    lossCurve: 'Loss Curve', autoStories: 'Auto-generated Stories',
-    samplesHint: 'Samples appear after training.',
-    inferTitle: '🧠 Predict Next Token — Continue Your Emoji Story',
-    inferPlaceholder: 'Enter emoji prompt (space-separated)… e.g. 🌅 🐓 🎵',
-    btnContinue: 'Continue ▶',
-    inferHint: 'Train the model first, then enter a few emoji above (separated by spaces) and press Continue to watch the model predict the next token one at a time.',
-    probTitle: 'Current Prediction — Top Token Probabilities',
-    starGithub: '⭐ Star on GitHub',
-    langBtn: '中文',
-    // Dynamic strings used in JS
-    training: 'Training…',
-    stopped: '⏹ Stopped.',
-    sampleStories: '--- sample stories ---',
-    trainingComplete: '✅ Training complete — scroll down to the inference playground ⬇',
-    vocabHint: (n) => `<strong>Vocabulary (${n} emoji + ⏹ end token):</strong>`,
-    inferReady: 'Enter a few emoji above (separated by spaces), then press Continue to watch the model predict the next token one by one, until it outputs ⏹ to end the story.',
-    processingPrompt: 'Processing prompt…',
-    genStep: (step, seen) => `generation step ${step}: model sees ${seen} tokens → predicts next`,
-    genEnd: (step) => `generation step ${step}: model predicted ⏹ end token — story complete!`,
-    inferDone: (n) => `Inference: ${n} tokens generated, model chose ⏹ end.`,
-    maxLength: ' (max length reached)',
-    unknownTokens: (t) => `⚠ Unknown tokens (not in vocab): ${t}`,
-    noValidTokens: '⚠ No valid tokens in prompt. Using BOS only.',
-    sampled: '← sampled',
-  },
-  zh: {
-    headerTag: '在浏览器里训练一个微型 GPT · 看它逐个 token 生成 emoji 故事',
-    configuration: '模型配置',
-    lblEmbd: '嵌入维度', lblHeads: '注意力头数', lblLayers: '层数',
-    lblBlock: '上下文长度', lblSteps: '训练步数', lblLR: '学习率', lblTemp: '温度',
-    lblStories: '训练故事 — 每行一个 emoji 故事，token 之间用空格分隔',
-    lblStoriesHint: '可以自由编辑 — 写你自己的故事，或用 AI 生成后粘贴到这里。',
-    btnTrain: '▶ 开始训练', btnStop: '■ 停止',
-    trainingLog: '训练日志', logReady: '就绪，点击「开始训练」。',
-    stats: '统计', statStep: '步数', statLoss: '损失', statParams: '参数量', statVocab: '词表',
-    lossCurve: '损失曲线', autoStories: '自动生成的故事',
-    samplesHint: '训练完成后自动生成。',
-    inferTitle: '🧠 预测下一个 Token — 续写你的 Emoji 故事',
-    inferPlaceholder: '输入 emoji 提示词（空格分隔）… 例如 🌅 🐓 🎵',
-    btnContinue: '续写 ▶',
-    inferHint: '先训练模型，然后在上方输入几个 emoji（空格分隔），点击「续写」观察模型逐个 token 预测故事。',
-    probTitle: '当前预测 — Top Token 概率分布',
-    starGithub: '⭐ 在 GitHub 上 Star',
-    langBtn: 'EN',
-    training: '训练中…',
-    stopped: '⏹ 已停止。',
-    sampleStories: '--- 生成故事样本 ---',
-    trainingComplete: '✅ 训练完成 — 向下滚动到推理区域 ⬇',
-    vocabHint: (n) => `<strong>词表（${n} 个 emoji + ⏹ 结束符）：</strong>`,
-    inferReady: '在上方输入几个 emoji（空格分隔），然后点击「续写」，观察模型逐个 token 预测，直到输出 ⏹ 结束故事。',
-    processingPrompt: '正在处理提示词…',
-    genStep: (step, seen) => `生成步骤 ${step}：模型看到 ${seen} 个 token → 预测下一个`,
-    genEnd: (step) => `生成步骤 ${step}：模型预测 ⏹ 结束符 — 故事完成！`,
-    inferDone: (n) => `推理完成：生成 ${n} 个 token，模型选择 ⏹ 结束。`,
-    maxLength: '（已达最大长度）',
-    unknownTokens: (t) => `⚠ 未知 token（不在词表中）：${t}`,
-    noValidTokens: '⚠ 提示词中没有有效 token，使用起始符。',
-    sampled: '← 采样',
-  }
-};
-
-function t(key, ...args) {
-  const val = i18n[currentLang][key];
-  if (typeof val === 'function') return val(...args);
-  return val || i18n.en[key] || key;
-}
-
-function applyLang() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    if (i18n[currentLang][key] !== undefined) {
-      const val = i18n[currentLang][key];
-      el.textContent = typeof val === 'string' ? val : val;
-    }
-  });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const key = el.getAttribute('data-i18n-placeholder');
-    if (i18n[currentLang][key]) el.placeholder = i18n[currentLang][key];
-  });
-  $('langToggle').textContent = i18n[currentLang].langBtn;
-}
-
-function toggleLang() {
-  currentLang = currentLang === 'en' ? 'zh' : 'en';
-  applyLang();
-}
 </script>
 
 <!-- ===== FOOTER ===== -->
@@ -1094,7 +989,7 @@ function toggleLang() {
               font-weight:600; font-size:0.85rem; padding:0.6rem 1.5rem; border-radius:4px;
               text-decoration:none; transition:filter 0.15s;"
        onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
-      <span data-i18n="starGithub">⭐ Star on GitHub</span>
+      ⭐ Star on GitHub
     </a>
   </div>
   <div style="margin-bottom: 0.75rem; font-size: 1.1rem; color: var(--accent); font-weight: 700; letter-spacing: 0.05em;">
