@@ -48,18 +48,17 @@
     font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;
     letter-spacing: 0.08em; margin-right: 0.5rem; padding: 0.45rem 0;
   }
-  .tab-btn {
-    font-family: var(--mono); font-size: 0.78rem; font-weight: 500;
-    padding: 0.4rem 1rem; border-radius: 4px; cursor: pointer;
+  .dataset-select {
+    font-family: var(--mono); font-size: 0.8rem; font-weight: 500;
+    padding: 0.45rem 2rem 0.45rem 0.7rem; border-radius: 4px; cursor: pointer;
     border: 1px solid var(--border); background: var(--surface2);
-    color: var(--text-dim); transition: all 0.15s;
+    color: var(--accent); transition: all 0.15s;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a7a8e'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 0.6rem center;
+    outline: none;
   }
-  .tab-btn:hover { border-color: var(--accent); color: var(--text); }
-  .tab-btn.active {
-    background: var(--accent-dim); border-color: var(--accent);
-    color: var(--accent); font-weight: 700;
-  }
-  .tab-btn .tab-icon { margin-right: 0.3rem; }
+  .dataset-select:hover, .dataset-select:focus { border-color: var(--accent); }
   .tab-status {
     margin-left: auto; font-size: 0.68rem; color: var(--text-dim);
     display: flex; align-items: center; gap: 0.4rem;
@@ -254,21 +253,15 @@
   <span class="tag">train a tiny GPT on emoji stories · watch it generate new ones token by token · all in your browser</span>
 </header>
 
-<!-- Dataset Tab Switcher -->
+<!-- Dataset Selector -->
 <div class="dataset-tabs">
   <span class="tabs-label">Dataset</span>
-  <button class="tab-btn" onclick="switchDataset('emoji')" id="tab-emoji">
-    <span class="tab-icon">🌈</span>Emoji
-  </button>
-  <button class="tab-btn" onclick="switchDataset('english')" id="tab-english">
-    <span class="tab-icon">🔤</span>English
-  </button>
-  <button class="tab-btn" onclick="switchDataset('chinese')" id="tab-chinese">
-    <span class="tab-icon">🀄</span>中文
-  </button>
-  <button class="tab-btn" onclick="switchDataset('custom')" id="tab-custom">
-    <span class="tab-icon">📂</span>Custom
-  </button>
+  <select class="dataset-select" id="datasetSelect" onchange="switchDataset(this.value)">
+    <option value="emoji">🌈 Emoji</option>
+    <option value="english">🔤 English (experimental)</option>
+    <option value="chinese">🀄 中文 (experimental)</option>
+    <option value="custom">📂 Custom (experimental)</option>
+  </select>
   <div class="tab-status" id="tabStatus">
     <span id="tabStatusText" style="color:var(--text-dim);font-size:0.68rem;">emoji stories loaded</span>
   </div>
@@ -837,7 +830,7 @@ const DATASETS = {
   custom:  { tokenizer: 'auto',   label: 'Custom',  hint: 'auto-detected tokenizer based on content' },
 };
 
-let currentMode = null;
+let currentMode = '';
 let isFirstLoad = true;
 let customText = '';
 
@@ -861,7 +854,7 @@ function detectTokenizer(text) {
 }
 
 function getEffectiveTokenizer() {
-  const mode = DATASETS[currentMode];
+  const mode = DATASETS[currentMode] || DATASETS.emoji;
   if (mode.tokenizer !== 'auto') return mode.tokenizer;
   const text = document.getElementById('cfgData').value;
   return detectTokenizer(text);
@@ -872,9 +865,8 @@ function switchDataset(mode) {
   const prevMode = currentMode;
   currentMode = mode;
 
-  // Update tab UI
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + mode).classList.add('active');
+  // Update select UI
+  document.getElementById('datasetSelect').value = mode;
 
   // Show/hide upload zone
   document.getElementById('uploadZone').style.display = (mode === 'custom') ? '' : 'none';
@@ -1143,7 +1135,7 @@ async function startTraining() {
   const BOS = tokenSet.length;
   const vocab_size = tokenSet.length + 1;
 
-  const modeLabel = DATASETS[currentMode].label;
+  const modeLabel = (DATASETS[currentMode] || DATASETS.emoji).label;
   log(`<span class="info">mode: ${modeLabel}  tokenizer: ${tokenizerMode}</span>`);
   log(`<span class="info">stories: ${docs.length}  vocab: ${vocab_size} (${tokenSet.length} tokens + ⏹end)</span>`);
   log(`<span class="info">embd: ${n_embd}  heads: ${n_head}  layers: ${n_layer}  block: ${block_size}</span>`);
@@ -1275,14 +1267,15 @@ async function startTraining() {
 
   // Update inference section
   const modeLower = currentMode;
-  $('inferModeBadge').textContent = DATASETS[currentMode].label;
+  const _ds = DATASETS[currentMode] || DATASETS.emoji;
+  $('inferModeBadge').textContent = _ds.label;
   $('inferModeBadge').className = 'mode-badge ' + modeLower;
   $('inferSection').classList.add('visible');
 
   // Vocab hint
   const displayTokens = tokenSet.slice(0, 80).join(sep || ' ');
   const extra = tokenSet.length > 80 ? ` … +${tokenSet.length - 80} more` : '';
-  $('vocabHint').innerHTML = `<strong>Vocabulary (${tokenSet.length} tokens + ⏹ end)</strong> · ${DATASETS[currentMode].hint}<br><span class="token-list">${displayTokens}${extra}  ⏹</span>`;
+  $('vocabHint').innerHTML = `<strong>Vocabulary (${tokenSet.length} tokens + ⏹ end)</strong> · ${_ds.hint}<br><span class="token-list">${displayTokens}${extra}  ⏹</span>`;
 
   // Set inference placeholder by mode
   const placeholders = {
