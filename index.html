@@ -886,16 +886,22 @@ function switchDataset(mode) {
   const hintEl = document.getElementById('dataTextareaHint');
   hintEl.textContent = ds.hint + ' · Edit freely or replace with your own stories.';
 
-  // Adjust block size recommendation
+  // Adjust recommended hyperparameters per mode
   if (mode === 'english') {
-    document.getElementById('cfgBlock').value = 20;
+    document.getElementById('cfgBlock').value = 24;
     document.getElementById('cfgEmbd').value = 32;
+    document.getElementById('cfgSteps').value = 3000;
+    document.getElementById('cfgTemp').value = 0.7;
   } else if (mode === 'chinese') {
-    document.getElementById('cfgBlock').value = 16;
+    document.getElementById('cfgBlock').value = 32;
     document.getElementById('cfgEmbd').value = 32;
+    document.getElementById('cfgSteps').value = 3000;
+    document.getElementById('cfgTemp').value = 0.8;
   } else {
     document.getElementById('cfgBlock').value = 32;
     document.getElementById('cfgEmbd').value = 16;
+    document.getElementById('cfgSteps').value = 2000;
+    document.getElementById('cfgTemp').value = 0.5;
   }
 
   if (mode === 'custom') {
@@ -1247,7 +1253,11 @@ async function startTraining() {
   }
 
   drawLossChart();
+  const finalLoss = lossHistory[lossHistory.length - 1];
   log('<span class="info">✅ Training complete — scroll down to the inference playground ⬇</span>');
+  if (finalLoss < 0.3) {
+    log(`<span class="loss-bad">⚠ Loss is very low (${finalLoss.toFixed(3)}) — model may be overfitting. Try raising Temperature to get more varied output.</span>`);
+  }
 
   _trained = { state_dict, tokenSet, token_to_id, BOS, vocab_size, n_layer, block_size, rng, gpt, tokenizerMode, sep };
 
@@ -1400,12 +1410,21 @@ function showProbBars(probData, tokenSet, BOS, chosenId, sep) {
 
   const el = $('probContent');
   el.innerHTML = '';
-  const maxProb = Math.max(...top.map(t => t.p));
+
+  // Use log scale so low-probability tokens remain visible when one dominates
+  const LOG_MIN = 1e-6;
+  const logVals = top.map(t => Math.log10(Math.max(t.p, LOG_MIN)));
+  const logMax = Math.max(...logVals);
+  const logMin = Math.min(...logVals, logMax - 4); // at least 4 decades range
 
   for (const t of top) {
     const label = t.i === BOS ? '⏹' : tokenSet[t.i];
-    const pct = (t.p * 100).toFixed(1);
-    const barW = (t.p / maxProb * 100).toFixed(1);
+    // Format: show more decimal places for tiny probs
+    const pct = t.p >= 0.01 ? (t.p * 100).toFixed(1) + '%'
+              : t.p >= 0.0001 ? (t.p * 100).toFixed(3) + '%'
+              : '<0.01%';
+    const logV = Math.log10(Math.max(t.p, LOG_MIN));
+    const barW = Math.max(1, ((logV - logMin) / (logMax - logMin) * 100)).toFixed(1);
     const isChosen = t.i === chosenId;
     const hue = t.i === BOS ? '0' : `${(t.i * 47) % 360}`;
     const fillColor = isChosen ? 'var(--accent)' : `hsl(${hue}, 55%, 50%)`;
