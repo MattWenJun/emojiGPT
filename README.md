@@ -52,7 +52,7 @@ Default config: 16-dim embeddings, 4 attention heads, 1 layer, ~4K parameters.
 
 ## Use Cases
 
-This isn't just a demo — it's a working model that can deliver real value:
+This isn't just a demo — it's the world's smallest fully working GPT, and it can deliver real value:
 
 - **AI Education** — The most intuitive way to teach how GPT works. Students see the full pipeline live: data → training → loss curve → inference → generation. Tweak the parameters and watch what happens. Better than any slide deck.
 - **Storyboarding & Film** — Generate emoji story sequences as rapid visual storyboards. A screenwriter or director can use emoji narratives as a lightweight tool for brainstorming scene progressions before committing to full production.
