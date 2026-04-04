@@ -50,6 +50,16 @@ Default config: 16-dim embeddings, 4 attention heads, 1 layer, ~4K parameters.
 - **Interactive inference** — type emoji prompts, see token-by-token generation with probability bars
 - **Zero dependencies** — one self-contained HTML file
 
+## Use Cases
+
+This isn't just a demo — it's a working model that can deliver real value:
+
+- **AI Education** — The most intuitive way to teach how GPT works. Students see the full pipeline live: data → training → loss curve → inference → generation. Tweak the parameters and watch what happens. Better than any slide deck.
+- **Storyboarding & Film** — Generate emoji story sequences as rapid visual storyboards. A screenwriter or director can use emoji narratives as a lightweight tool for brainstorming scene progressions before committing to full production.
+- **Cross-language Storytelling** — Emoji have no language barrier. A reader in Tokyo and a reader in São Paulo both understand 🤕→🏥→💉→🙏→😊 as the same story.
+- **Creative & Social** — Use generated emoji stories as prompts for improv writing, party games, or social media content.
+- **Narrative Prototyping** — Validate story structures at near-zero cost before scaling up to natural language with larger models.
+
 ## Why does it work?
 
 How can a ~4K-parameter model generate coherent stories? The answer is a blend of AI and cognitive psychology.
