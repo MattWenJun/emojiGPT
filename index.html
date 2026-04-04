@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>emojiGPT — Emoji Story Predictor</title>
+<title>miniGPT — Train a Tiny Language Model in Your Browser</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -31,12 +31,44 @@
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   header {
-    padding: 2rem 2rem 1rem;
+    padding: 1.5rem 2rem 1rem;
     border-bottom: 1px solid var(--border);
     display: flex; align-items: baseline; gap: 1.5rem; flex-wrap: wrap;
   }
   header h1 { font-family: var(--sans); font-size: 1.6rem; font-weight: 700; color: var(--accent); letter-spacing: -0.03em; }
   header .tag { font-size: 0.7rem; color: var(--text-dim); background: var(--surface2); padding: 0.25rem 0.6rem; border-radius: 3px; border: 1px solid var(--border); }
+
+  /* ===== Dataset Tabs ===== */
+  .dataset-tabs {
+    max-width: 1200px; margin: 0 auto;
+    padding: 1rem 2rem 0;
+    display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;
+  }
+  .dataset-tabs .tabs-label {
+    font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-right: 0.5rem; padding: 0.45rem 0;
+  }
+  .tab-btn {
+    font-family: var(--mono); font-size: 0.78rem; font-weight: 500;
+    padding: 0.4rem 1rem; border-radius: 4px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text-dim); transition: all 0.15s;
+  }
+  .tab-btn:hover { border-color: var(--accent); color: var(--text); }
+  .tab-btn.active {
+    background: var(--accent-dim); border-color: var(--accent);
+    color: var(--accent); font-weight: 700;
+  }
+  .tab-btn .tab-icon { margin-right: 0.3rem; }
+  .tab-status {
+    margin-left: auto; font-size: 0.68rem; color: var(--text-dim);
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .tab-status .dot-loading {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent-dim);
+    border: 1px solid var(--accent); animation: pulse 1.2s infinite;
+  }
+
   .container {
     max-width: 1200px; margin: 0 auto; padding: 1.5rem 2rem 3rem;
     display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
@@ -64,12 +96,35 @@
   .config-item input:focus { border-color: var(--accent); }
   .config-item textarea {
     background: var(--bg); border: 1px solid var(--border); color: var(--text);
-    font-family: var(--mono); font-size: 1rem; padding: 0.5rem;
-    border-radius: 3px; outline: none; resize: vertical; min-height: 160px;
-    transition: border-color 0.2s; line-height: 1.8;
+    font-family: var(--mono); font-size: 0.8rem; padding: 0.5rem;
+    border-radius: 3px; outline: none; resize: vertical; min-height: 180px;
+    transition: border-color 0.2s; line-height: 1.6;
   }
   .config-item textarea:focus { border-color: var(--accent); }
   .config-full { grid-column: 1 / -1; }
+
+  /* Dataset info banner */
+  .dataset-info {
+    grid-column: 1 / -1;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 0.6rem 0.8rem; font-size: 0.7rem; color: var(--text-dim);
+    display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
+  }
+  .dataset-info .info-item { display: flex; gap: 0.3rem; align-items: center; }
+  .dataset-info .info-val { color: var(--accent); font-weight: 600; }
+
+  /* Upload zone */
+  .upload-zone {
+    grid-column: 1 / -1;
+    border: 2px dashed var(--border); border-radius: 6px;
+    padding: 1.5rem; text-align: center; cursor: pointer;
+    transition: all 0.2s; color: var(--text-dim); font-size: 0.8rem;
+  }
+  .upload-zone:hover { border-color: var(--accent); color: var(--text); }
+  .upload-zone.dragover { border-color: var(--accent); background: var(--accent-dim); }
+  .upload-zone input { display: none; }
+  .upload-zone .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .upload-zone .upload-hint { font-size: 0.65rem; margin-top: 0.3rem; color: var(--text-dim); }
 
   .btn {
     font-family: var(--mono); font-size: 0.8rem; font-weight: 500;
@@ -104,8 +159,9 @@
   .samples-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .sample-tag {
     background: var(--accent-dim); border: 1px solid rgba(0,229,160,0.25);
-    color: var(--accent); font-size: 0.95rem; padding: 0.3rem 0.6rem;
-    border-radius: 3px; animation: fadeIn 0.3s ease;
+    color: var(--accent); font-size: 0.8rem; padding: 0.3rem 0.6rem;
+    border-radius: 3px; animation: fadeIn 0.3s ease; line-height: 1.5;
+    max-width: 100%; word-break: break-word;
   }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
@@ -118,25 +174,28 @@
   .infer-input-row { display: flex; gap: 0.5rem; align-items: stretch; margin-bottom: 0.75rem; }
   .infer-input-row input {
     flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text);
-    font-size: 1.4rem; padding: 0.5rem 0.7rem; border-radius: 4px;
-    font-family: var(--mono); outline: none; letter-spacing: 0.15em;
+    font-size: 1rem; padding: 0.5rem 0.7rem; border-radius: 4px;
+    font-family: var(--mono); outline: none;
   }
   .infer-input-row input:focus { border-color: var(--accent); }
-  .infer-input-row input::placeholder { color: var(--text-dim); font-size: 0.8rem; letter-spacing: 0; }
+  .infer-input-row input::placeholder { color: var(--text-dim); font-size: 0.8rem; }
 
   .story-display {
     background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
-    padding: 1.2rem; min-height: 80px; font-size: 2rem; line-height: 1.6;
-    letter-spacing: 0.2em; word-break: break-all;
+    padding: 1.2rem; min-height: 80px; font-size: 1.1rem; line-height: 1.9;
+    word-break: break-word;
   }
+  /* emoji mode: bigger font */
+  .story-display.mode-emoji { font-size: 2rem; letter-spacing: 0.2em; }
+
   .story-display .tok-prompt { opacity: 1; }
   .story-display .tok-gen {
     animation: tokenPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: inline-block;
   }
   .story-display .tok-cursor {
-    display: inline-block; width: 3px; height: 1.5em; background: var(--accent);
-    vertical-align: text-bottom; margin-left: 2px;
+    display: inline-block; width: 2px; height: 1.2em; background: var(--accent);
+    vertical-align: text-bottom; margin-left: 1px;
     animation: blink 0.8s step-end infinite;
   }
   @keyframes tokenPop {
@@ -154,11 +213,11 @@
     display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;
     font-size: 0.8rem; height: 1.6rem;
   }
-  .prob-emoji { width: 2rem; text-align: center; font-size: 1.1rem; }
+  .prob-token { width: 5rem; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
   .prob-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
   .prob-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
   .prob-pct { width: 3.5rem; text-align: right; font-size: 0.7rem; color: var(--text-dim); }
-  .prob-chosen .prob-emoji { transform: scale(1.3); }
+  .prob-chosen .prob-token { color: var(--accent); font-weight: 700; }
   .prob-chosen .prob-fill { background: var(--accent) !important; }
   .prob-chosen .prob-pct { color: var(--accent); font-weight: 700; }
 
@@ -168,21 +227,52 @@
     font-size: 0.75rem; color: var(--text-dim); line-height: 2;
   }
   .vocab-hint strong { color: var(--text); }
-  .vocab-hint .emoji-list { font-size: 0.95rem; letter-spacing: 0.1em; }
+  .vocab-hint .token-list { font-size: 0.85rem; line-height: 1.8; word-break: break-word; }
 
   .infer-step-label {
     font-size: 0.7rem; color: var(--text-dim); margin-top: 0.5rem;
     text-align: center; letter-spacing: 0.04em;
   }
+
+  /* mode badge */
+  .mode-badge {
+    display: inline-block; font-size: 0.6rem; padding: 0.15rem 0.45rem;
+    border-radius: 3px; border: 1px solid; margin-left: 0.4rem;
+    vertical-align: middle; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .mode-badge.emoji { color: #ffaa33; border-color: #ffaa33; background: rgba(255,170,51,0.1); }
+  .mode-badge.english { color: #6699ff; border-color: #6699ff; background: rgba(102,153,255,0.1); }
+  .mode-badge.chinese { color: #ff66aa; border-color: #ff66aa; background: rgba(255,102,170,0.1); }
+  .mode-badge.custom { color: #aa88ff; border-color: #aa88ff; background: rgba(170,136,255,0.1); }
 </style>
 </head>
 <body>
 <div class="grain"></div>
 
 <header>
-  <h1>emojiGPT</h1>
-  <span class="tag">train a tiny GPT on emoji stories · watch it generate new ones token by token · all in your browser</span>
+  <h1>miniGPT</h1>
+  <span class="tag">train a tiny GPT on stories · watch it generate new ones token by token · all in your browser</span>
 </header>
+
+<!-- Dataset Tab Switcher -->
+<div class="dataset-tabs">
+  <span class="tabs-label">Dataset</span>
+  <button class="tab-btn active" onclick="switchDataset('emoji')" id="tab-emoji">
+    <span class="tab-icon">🌈</span>Emoji
+  </button>
+  <button class="tab-btn" onclick="switchDataset('english')" id="tab-english">
+    <span class="tab-icon">🔤</span>English
+  </button>
+  <button class="tab-btn" onclick="switchDataset('chinese')" id="tab-chinese">
+    <span class="tab-icon">🀄</span>中文
+  </button>
+  <button class="tab-btn" onclick="switchDataset('custom')" id="tab-custom">
+    <span class="tab-icon">📂</span>Custom
+  </button>
+  <div class="tab-status" id="tabStatus">
+    <span id="tabStatusText" style="color:var(--text-dim);font-size:0.68rem;">emoji stories loaded</span>
+  </div>
+</div>
 
 <div class="container">
   <!-- Left column -->
@@ -191,6 +281,24 @@
       <div class="card-head">Configuration</div>
       <div class="card-body">
         <div class="config-grid">
+          <!-- Dataset info row -->
+          <div class="dataset-info" id="datasetInfo">
+            <div class="info-item">Mode <span class="info-val" id="infoMode">Emoji</span></div>
+            <div class="info-item">Stories <span class="info-val" id="infoStories">—</span></div>
+            <div class="info-item">Tokenizer <span class="info-val" id="infoTokenizer">space-split</span></div>
+            <div class="info-item">Vocab size <span class="info-val" id="infoVocab">—</span></div>
+          </div>
+
+          <!-- Custom upload zone (hidden by default) -->
+          <div class="upload-zone config-full" id="uploadZone" style="display:none;"
+               onclick="document.getElementById('fileInput').click()"
+               ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+            <input type="file" id="fileInput" accept=".txt" onchange="handleFileSelect(event)">
+            <div class="upload-icon">📄</div>
+            <div>Drop a <strong>.txt</strong> file here, or click to browse</div>
+            <div class="upload-hint">One story per line · The model will learn from your stories</div>
+          </div>
+
           <div class="config-item">
             <label>Embedding dim</label>
             <input id="cfgEmbd" type="number" value="16" min="4" max="64" step="4">
@@ -205,7 +313,7 @@
           </div>
           <div class="config-item">
             <label>Block size</label>
-            <input id="cfgBlock" type="number" value="32" min="4" max="64">
+            <input id="cfgBlock" type="number" value="32" min="4" max="128">
           </div>
           <div class="config-item">
             <label>Train steps</label>
@@ -219,10 +327,95 @@
             <label>Temperature</label>
             <input id="cfgTemp" type="number" value="0.5" min="0.1" max="2.0" step="0.1">
           </div>
+
           <div class="config-item config-full">
-            <label>Training stories — one emoji story per line, spaces between tokens</label>
-            <span style="font-size:0.6rem;color:var(--text-dim);margin-bottom:0.15rem;">Edit freely — write your own stories or use AI to generate them, then paste here.</span>
-            <textarea id="cfgData">🌅 🐓 🎵 ☕ 🍳 😋 🚶 🏢
+            <label id="dataTextareaLabel">Training stories — one story per line</label>
+            <span id="dataTextareaHint" style="font-size:0.6rem;color:var(--text-dim);margin-bottom:0.15rem;">Edit freely — write your own stories or paste here.</span>
+            <textarea id="cfgData" rows="10"></textarea>
+          </div>
+
+          <div class="config-full" style="display:flex;gap:0.5rem;">
+            <button id="btnTrain" class="btn btn-primary" onclick="startTraining()">▶ Train</button>
+            <button id="btnStop" class="btn btn-stop" onclick="stopTraining()" style="display:none;">■ Stop</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="dot" id="dotTrain"></span> Training Log</div>
+      <div class="card-body">
+        <div id="logOutput">Ready. Select a dataset tab and press Train to begin.
+</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+    <div class="card">
+      <div class="card-head">Stats</div>
+      <div class="card-body">
+        <div class="stats-row">
+          <div class="stat"><div class="stat-val" id="statStep">—</div><div class="stat-label">Step</div></div>
+          <div class="stat"><div class="stat-val" id="statLoss">—</div><div class="stat-label">Loss</div></div>
+          <div class="stat"><div class="stat-val" id="statParams">—</div><div class="stat-label">Params</div></div>
+          <div class="stat"><div class="stat-val" id="statVocab">—</div><div class="stat-label">Vocab</div></div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">Loss Curve</div>
+      <div class="card-body">
+        <canvas id="lossCanvas"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="dot" id="dotSample"></span> Auto-generated Stories</div>
+      <div class="card-body">
+        <div class="samples-grid" id="samplesGrid">
+          <span style="color:var(--text-dim);font-size:0.75rem;">Samples appear after training.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== INFERENCE PLAYGROUND ===== -->
+<div class="infer-section" id="inferSection">
+  <div style="max-width:1200px;margin:0 auto;padding:0 2rem 3rem;">
+    <div class="card">
+      <div class="card-head" style="font-size:0.95rem;text-transform:none;letter-spacing:0;">
+        Inference Playground
+        <span class="mode-badge" id="inferModeBadge">emoji</span>
+      </div>
+      <div class="card-body">
+        <div id="vocabHint" class="vocab-hint"></div>
+        <div class="infer-input-row">
+          <input id="inferInput" type="text" placeholder="Enter prompt tokens (space-separated for emoji/english, chars for chinese)…" />
+          <button class="btn btn-primary" onclick="runInference()" id="btnInfer" style="margin-top:0;white-space:nowrap;">Continue ▶</button>
+        </div>
+        <div class="story-display" id="storyDisplay">
+          <span style="color:var(--text-dim);font-size:0.9rem;">Train the model first, then enter a prompt above and press Continue to watch the model predict the next token one at a time.</span>
+        </div>
+        <div class="prob-bar-container" id="probBars" style="display:none;">
+          <div class="prob-bar-title">Current Prediction — Top Token Probabilities</div>
+          <div id="probContent"></div>
+          <div class="infer-step-label" id="inferStepLabel"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Dataset Mode =====
+// Datasets are embedded directly for offline / file:// / GitHub Pages compatibility
+const DATASET_TEXTS = {
+  emoji: `🌅 🐓 🎵 ☕ 🍳 😋 🚶 🏢
 🌅 🐓 🎵 ☕ 🥐 😋 📖 🏫
 🌅 🐓 🎵 🍵 🍳 😋 🚗 🏢
 🌅 🐓 🎵 🏃 💦 💪 🚿 ☕
@@ -452,83 +645,326 @@
 ❄️ ⛄ 😊 ☕ 🔥 🏠 😌 💕
 ❄️ 🌨️ 😢 🏠 ☕ 🔥 😌 😴
 🐉 😱 🏃 ⚔️ 🛡️ 💥 🤕 🏥
-🐉 😱 🔥 ⚔️ 💪 🛡️ 👏 🏆</textarea>
-          </div>
-          <div class="config-full" style="display:flex;gap:0.5rem;">
-            <button id="btnTrain" class="btn btn-primary" onclick="startTraining()">▶ Train</button>
-            <button id="btnStop" class="btn btn-stop" onclick="stopTraining()" style="display:none;">■ Stop</button>
-          </div>
-        </div>
-      </div>
-    </div>
+🐉 😱 🔥 ⚔️ 💪 🛡️ 👏 🏆`,
+  english: `the sun rose over the mountains and the birds began to sing
+a child woke up early and ran downstairs to find breakfast ready
+the old dog stretched by the fire and fell asleep again
+she opened the window and cool morning air filled the room
+he made coffee and sat reading the newspaper in silence
+the baker arrived at the shop before dawn to start the bread
+rain began to fall gently and the streets grew quiet and dark
+the cat jumped onto the windowsill and watched the sparrows outside
+two old friends met at the corner and talked for a long time
+the boy found a coin on the ground and kept it in his pocket
+the teacher wrote a question on the board and waited for an answer
+she forgot her umbrella and walked home slowly in the drizzle
+the farmer checked the sky and decided to harvest the wheat today
+a dog barked in the distance and the whole village stirred awake
+the train arrived late and everyone on the platform let out a sigh
+he stayed up all night reading and fell asleep at his desk at dawn
+the little girl lost her balloon and cried until her mother bought another
+the fisherman cast his line into the river and waited in silence
+the fire crackled in the hearth and the family gathered around it
+she planted seeds in the garden and promised to water them every day
+the student failed the test but decided to study harder next time
+the doctor listened carefully and told him to rest for a week
+a stranger knocked on the door and asked for directions to the station
+the old woman fed the pigeons every morning without fail
+he climbed the hill slowly and looked back at the valley below
+the clock struck midnight and the house fell completely silent
+the chef tasted the soup and added a pinch of salt
+she wrote a letter and left it on the kitchen table before leaving
+the carpenter measured the wood twice and then cut it once
+the boy threw a stone into the pond and watched the ripples spread
+they sat under the oak tree and shared bread and stories
+the merchant packed his goods and set off on the road before sunrise
+the wind picked up and the leaves swirled across the empty yard
+he returned home after years away and hardly recognized the streets
+the nurse changed the bandages quietly so as not to wake the patient
+she climbed the ladder rung by rung until she reached the roof
+the cook hummed softly while stirring the pot on the stove
+the soldier sat down by the road and took off his heavy boots
+a fox crossed the field at dusk and disappeared into the forest
+the librarian found an old letter hidden inside a borrowed book
+the lighthouse keeper watched the storm approach from the sea
+she wrote her name in the sand before the tide came in
+the blacksmith struck the iron while it glowed red in the forge
+the shepherd counted his flock before leading them down the hill
+he stood at the edge of the cliff and stared out at the grey sea
+the mother tucked the blanket around the sleeping child and left softly
+the painter stood back and looked at the canvas for a long time
+a child asked why the sky was blue and the grandfather smiled slowly
+the pilot checked the instruments one last time before takeoff
+the innkeeper lit the lanterns as evening fell over the village
+she sang to herself while hanging laundry on the line in the wind
+the guard paced back and forth in front of the locked gate
+he sat down at the piano and played a slow and quiet melody
+the diver took a deep breath and plunged into the dark water
+the carpenter finished the chair and ran his hand over the smooth wood
+a crow landed on the fence post and stared at the empty field
+she dried her eyes and decided it was time to move forward
+the captain ordered the crew to pull in the sails before the storm
+he opened the old trunk and found letters he had never seen before
+the monk swept the stone courtyard as the sun climbed overhead
+a horse galloped across the field and came to rest by the river
+the widow placed flowers on the grave and stood there in the quiet
+she stayed by the window all night waiting for a light to appear
+the woodcutter sat down on a log and ate his bread in the forest
+the river was low that summer and the rocks were easy to cross
+he read the same page three times without understanding a single word
+the child ran ahead and turned to wave before vanishing around the corner
+the gardener found a stray kitten hiding beneath the rose bushes
+she took the long road home and arrived just as the lamps were lit
+the scholar spent the winter translating a book no one else could read
+two brothers argued over nothing and did not speak for a whole week
+the cook baked a cake and left it cooling by the open window
+he arrived at the station only to find the last train had already gone
+the old clock stopped working and no one knew quite what time it was
+the sailor watched the sun sink into the ocean and thought of home
+she packed everything into one bag and left before anyone was awake
+the mechanic worked through the night and fixed the engine by morning
+the journalist asked a difficult question and the minister looked away
+he dug in the garden until he found the old tin buried near the wall
+the poet sat on the bench and watched pigeons for the rest of the afternoon
+she told her secret to the river and felt lighter on the walk home
+the hunter returned with nothing and sat down to a meal of bread and water
+a boy carved his name into the bark of the tallest tree in the orchard
+the nurse held the old man's hand and told him it would not be long
+he rode through the night and arrived as the church bells were ringing
+she found a key in her coat pocket but could not remember what it opened
+the soldier folded the map and hid it inside his jacket
+the child drew a house with smoke coming out of the chimney
+the baker pulled the loaves from the oven and stacked them on the shelf
+she walked into the fog and was gone before he could call her name
+the candle burned down to nothing and the room went dark`,
+  chinese: `太阳升起来了，鸟儿开始在树上歌唱
+孩子一早醒来跑下楼，发现早饭已经摆好了
+老狗趴在炉火旁伸了个懒腰，又睡着了
+她推开窗户，清晨的凉风涌进了房间
+他煮了咖啡，静静地坐着看报纸
+面包师傅在天亮前就来到店里开始揉面
+细雨开始飘落，街道渐渐安静下来
+猫跳上窗台，盯着外面的麻雀看
+两个老朋友在街角相遇，聊了很长时间
+男孩在地上捡到一枚硬币，悄悄放进了口袋
+老师在黑板上写了一个问题，等着学生回答
+她忘带了雨伞，只好慢慢走在雨中回家
+农夫看了看天色，决定今天就收割小麦
+远处传来狗叫声，整个村子都醒了过来
+火车晚点了，站台上的人们都叹了口气
+他熬了一夜读书，天亮时趴在桌上睡着了
+小女孩的气球飞走了，哭个不停，直到妈妈买了新的
+渔夫把鱼线抛进河里，静静地等待着
+火炉里的柴火噼啪作响，一家人围坐在旁边
+她在园子里种下种子，答应自己每天都来浇水
+学生这次考试没有通过，但决心更加努力
+医生仔细听完后告诉他好好休息一周
+一个陌生人敲门，问去车站怎么走
+老太太每天早晨都去喂广场上的鸽子
+他慢慢爬上山顶，回头望向山谷
+午夜的钟声响起，屋子里彻底安静了
+厨师尝了尝汤，又加了一小撮盐
+她写了一封信，在出门前放在厨房桌上
+木匠量了两次，才动手锯木头
+男孩向池塘里扔了一块石头，看着涟漪散开
+他们坐在老橡树下，分着面包讲故事
+商人打包好货物，在日出前踏上了路途
+风突然大了起来，落叶在空旷的院子里打转
+他离家多年后回来，几乎认不出这条街了
+护士轻手轻脚地换药，不想吵醒病人
+她一阶一阶地爬上梯子，终于爬到了屋顶
+厨子一边哼歌，一边搅动炉上的锅
+士兵在路边坐下，脱下了沉重的靴子
+黄昏时一只狐狸穿过田野，消失进树林里
+图书管理员在还回来的书里发现了一封旧信
+灯塔守护者看着海上的暴风雨越来越近
+她在沙滩上写下自己的名字，潮水随后涌来
+铁匠在铁还是红热的时候用力敲打
+牧羊人在下山前数了数羊群
+他站在悬崖边上，望着灰色的大海
+母亲把毯子掖好，轻手轻脚地走出了房间
+画家退后几步，打量着画布看了很久
+孩子问天空为什么是蓝色的，老人慢慢地笑了
+飞行员在起飞前最后检查了一遍仪器
+旅店老板在傍晚时分为村子里的灯笼点上火
+她一边晾衣服，一边对着风轻声唱歌
+门卫在锁着的大门前来回踱步
+他坐到钢琴前，弹起一段轻柔的旋律
+潜水员深吸一口气，跳进了黑暗的水中
+木匠做好了椅子，用手抚摸光滑的木纹
+一只乌鸦落在篱笆柱上，盯着空旷的田野
+她擦干眼泪，决定是时候向前走了
+船长命令船员在暴风雨来临前收好帆
+他打开那个旧箱子，发现了从未见过的信件
+修道士在阳光渐高时扫着石头庭院
+一匹马奔过田野，在河边停了下来
+寡妇在墓前放了鲜花，静静地站在那里
+她整夜守在窗边，等待着一盏灯出现
+樵夫坐在一根原木上，在树林里吃着面包
+那年夏天河水很低，踩着石头就能过去
+他把同一页读了三遍，却一个字也没看进去
+孩子跑在前面，回头招了招手，转角就不见了
+园丁在玫瑰丛下发现了一只迷路的小猫
+她走了那条绕远的路，回到家时灯刚好亮起
+学者整个冬天都在翻译一本别人读不懂的书
+两兄弟为了一件小事争吵，一整周没说话
+厨子烤了一个蛋糕，放在开着的窗边晾凉
+他赶到车站，末班车已经开走了
+老钟停了，没人知道现在究竟几点了
+水手看着太阳沉入大海，想起了家
+她把所有东西装进一个包，趁人还没醒就走了
+机修工整夜工作，天亮前把发动机修好了
+记者问了一个棘手的问题，部长把头转向一边
+他在园子里挖啊挖，终于在墙根找到了那个旧铁盒
+诗人坐在长椅上，看了一下午的鸽子
+她把秘密告诉了河流，走在回家路上感觉轻松多了
+猎人空手而归，坐下来只有面包和清水
+男孩用刀在果园最高的树干上刻下了自己的名字
+护士握着老人的手，轻声说不会太久了
+他骑马穿越了一夜，在教堂钟声响起时抵达
+她在外套口袋里摸到一把钥匙，却想不起来开哪个锁
+士兵叠好地图，塞进了夹克里
+孩子画了一幢房子，烟囱里冒着烟
+面包师把出炉的面包从烤箱里取出来，整齐地堆在架子上
+她走进了雾里，他还没来得及叫她就不见了
+蜡烛烧到了底，房间里一片漆黑`,
+};
 
-    <div class="card">
-      <div class="card-head"><span class="dot" id="dotTrain"></span> Training Log</div>
-      <div class="card-body">
-        <div id="logOutput">Ready. Press Train to begin.
-</div>
-      </div>
-    </div>
-  </div>
+const DATASETS = {
+  emoji:   { tokenizer: 'space',  label: 'Emoji',   hint: 'each emoji is a token, separated by spaces' },
+  english: { tokenizer: 'word',   label: 'English', hint: 'each word is a token, separated by spaces' },
+  chinese: { tokenizer: 'char',   label: '中文',    hint: 'each character is a token' },
+  custom:  { tokenizer: 'auto',   label: 'Custom',  hint: 'auto-detected tokenizer based on content' },
+};
 
-  <!-- Right column -->
-  <div style="display:flex;flex-direction:column;gap:1.5rem;">
-    <div class="card">
-      <div class="card-head">Stats</div>
-      <div class="card-body">
-        <div class="stats-row">
-          <div class="stat"><div class="stat-val" id="statStep">—</div><div class="stat-label">Step</div></div>
-          <div class="stat"><div class="stat-val" id="statLoss">—</div><div class="stat-label">Loss</div></div>
-          <div class="stat"><div class="stat-val" id="statParams">—</div><div class="stat-label">Params</div></div>
-          <div class="stat"><div class="stat-val" id="statVocab">—</div><div class="stat-label">Vocab</div></div>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-      </div>
-    </div>
+let currentMode = 'emoji';
+let customText = '';
 
-    <div class="card">
-      <div class="card-head">Loss Curve</div>
-      <div class="card-body">
-        <canvas id="lossCanvas"></canvas>
-      </div>
-    </div>
+function tokenizeLine(line, mode) {
+  const t = mode === 'auto' ? detectTokenizer(line) : mode;
+  if (t === 'space' || t === 'word') {
+    return line.trim().split(/\s+/).filter(x => x.length > 0);
+  }
+  if (t === 'char') {
+    // split by char, skip spaces
+    return line.trim().split('').filter(x => x !== ' ');
+  }
+  return line.trim().split(/\s+/).filter(x => x.length > 0);
+}
 
-    <div class="card">
-      <div class="card-head"><span class="dot" id="dotSample"></span> Auto-generated Stories</div>
-      <div class="card-body">
-        <div class="samples-grid" id="samplesGrid">
-          <span style="color:var(--text-dim);font-size:0.75rem;">Samples appear after training.</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+function detectTokenizer(text) {
+  // Heuristic: if majority of chars are CJK, use char tokenizer
+  const cjk = (text.match(/[\u4e00-\u9fff\u3040-\u30ff]/g) || []).length;
+  const total = text.replace(/\s/g, '').length;
+  return (total > 0 && cjk / total > 0.3) ? 'char' : 'word';
+}
 
-<!-- ===== INFERENCE PLAYGROUND ===== -->
-<div class="infer-section" id="inferSection">
-  <div style="max-width:1200px;margin:0 auto;padding:0 2rem 3rem;">
-    <div class="card">
-      <div class="card-head" style="font-size:1rem;text-transform:none;letter-spacing:0;">🧠 Predict Next Token — Continue Your Emoji Story</div>
-      <div class="card-body">
-        <div id="vocabHint" class="vocab-hint"></div>
-        <div class="infer-input-row">
-          <input id="inferInput" type="text" placeholder="Enter emoji prompt (space-separated)… e.g. 🌅 🐓 🎵" />
-          <button class="btn btn-primary" onclick="runInference()" id="btnInfer" style="margin-top:0;white-space:nowrap;">Continue ▶</button>
-        </div>
-        <div class="story-display" id="storyDisplay">
-          <span style="color:var(--text-dim);font-size:1rem;">Train the model first, then enter a few emoji above (separated by spaces) and press Continue to watch the model predict the next token one at a time.</span>
-        </div>
-        <div class="prob-bar-container" id="probBars" style="display:none;">
-          <div class="prob-bar-title">Current Prediction — Top Token Probabilities</div>
-          <div id="probContent"></div>
-          <div class="infer-step-label" id="inferStepLabel"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+function getEffectiveTokenizer() {
+  const mode = DATASETS[currentMode];
+  if (mode.tokenizer !== 'auto') return mode.tokenizer;
+  const text = document.getElementById('cfgData').value;
+  return detectTokenizer(text);
+}
 
-<script>
+function switchDataset(mode) {
+  if (mode === currentMode && mode !== 'custom') return;
+  currentMode = mode;
+
+  // Update tab UI
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + mode).classList.add('active');
+
+  // Show/hide upload zone
+  document.getElementById('uploadZone').style.display = (mode === 'custom') ? '' : 'none';
+
+  // Update info panel
+  const ds = DATASETS[mode];
+  document.getElementById('infoMode').textContent = ds.label;
+  document.getElementById('infoTokenizer').textContent = ds.tokenizer === 'space' ? 'space-split' : ds.tokenizer === 'word' ? 'word-split' : ds.tokenizer === 'char' ? 'char-split' : 'auto';
+
+  // Update textarea hint
+  const hintEl = document.getElementById('dataTextareaHint');
+  hintEl.textContent = ds.hint + ' · Edit freely or replace with your own stories.';
+
+  // Adjust block size recommendation
+  if (mode === 'english') {
+    document.getElementById('cfgBlock').value = 20;
+    document.getElementById('cfgEmbd').value = 32;
+  } else if (mode === 'chinese') {
+    document.getElementById('cfgBlock').value = 16;
+    document.getElementById('cfgEmbd').value = 32;
+  } else {
+    document.getElementById('cfgBlock').value = 32;
+    document.getElementById('cfgEmbd').value = 16;
+  }
+
+  if (mode === 'custom') {
+    if (customText) {
+      setTextareaContent(customText);
+    } else {
+      document.getElementById('cfgData').value = '';
+      document.getElementById('cfgData').placeholder = 'Upload a .txt file above, or paste your stories here (one per line)…';
+    }
+    updateDatasetStats();
+    return;
+  }
+
+  // Load from embedded data (works offline, file://, GitHub Pages)
+  setTextareaContent(DATASET_TEXTS[mode]);
+  document.getElementById('tabStatusText').textContent = ds.label.toLowerCase() + ' stories loaded';
+  updateDatasetStats();
+}
+
+function setTextareaContent(text) {
+  document.getElementById('cfgData').value = text;
+  document.getElementById('cfgData').placeholder = '';
+}
+
+function updateDatasetStats() {
+  const lines = document.getElementById('cfgData').value.trim().split('\n').filter(l => l.trim().length > 0);
+  document.getElementById('infoStories').textContent = lines.length;
+  // Estimate vocab
+  const tok = getEffectiveTokenizer();
+  const tokens = new Set(lines.flatMap(l => tokenizeLine(l, tok)));
+  document.getElementById('infoVocab').textContent = tokens.size + ' + 1 end';
+}
+
+// ===== Custom file upload =====
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.add('dragover');
+}
+function handleDragLeave(e) {
+  document.getElementById('uploadZone').classList.remove('dragover');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) readUploadedFile(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) readUploadedFile(file);
+}
+function readUploadedFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    customText = e.target.result;
+    setTextareaContent(customText.trim());
+    document.getElementById('tabStatusText').textContent = file.name + ' loaded';
+    updateDatasetStats();
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+// Update stats when textarea changes
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('cfgData').addEventListener('input', updateDatasetStats);
+  // Load default dataset
+  switchDataset('emoji');
+});
+
 // ===== PRNG =====
 class SeededRandom {
   constructor(seed) { this.state = seed; }
@@ -657,10 +1093,6 @@ function drawLossChart() {
 
 function lossColor(v) { return v > 3 ? 'loss-bad' : v > 1.5 ? 'loss-ok' : 'loss-good'; }
 
-function tokenizeEmojiLine(line) {
-  return line.trim().split(/\s+/).filter(t => t.length > 0);
-}
-
 // ===== Training =====
 async function startTraining() {
   if (running) return;
@@ -683,8 +1115,9 @@ async function startTraining() {
   const scale = 1 / head_dim ** 0.5;
   const beta1 = 0.85, beta2 = 0.99, eps_adam = 1e-8;
 
+  const tokenizerMode = getEffectiveTokenizer();
   const rawLines = $('cfgData').value.trim().split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  const docs = rawLines.map(tokenizeEmojiLine);
+  const docs = rawLines.map(l => tokenizeLine(l, tokenizerMode));
   rng.shuffle(docs);
 
   const tokenSet = [...new Set(docs.flat())].sort();
@@ -692,7 +1125,9 @@ async function startTraining() {
   const BOS = tokenSet.length;
   const vocab_size = tokenSet.length + 1;
 
-  log(`<span class="info">stories: ${docs.length}  vocab: ${vocab_size} (${tokenSet.length} emoji + ⏹end)</span>`);
+  const modeLabel = DATASETS[currentMode].label;
+  log(`<span class="info">mode: ${modeLabel}  tokenizer: ${tokenizerMode}</span>`);
+  log(`<span class="info">stories: ${docs.length}  vocab: ${vocab_size} (${tokenSet.length} tokens + ⏹end)</span>`);
   log(`<span class="info">embd: ${n_embd}  heads: ${n_head}  layers: ${n_layer}  block: ${block_size}</span>`);
 
   const matrix = (nout, nin, std = 0.08) =>
@@ -787,6 +1222,7 @@ async function startTraining() {
   }
 
   // Auto-generate sample stories
+  const sep = (tokenizerMode === 'char') ? '' : ' ';
   if (!stopFlag || lossHistory.length > 10) {
     log('<span class="info">\n--- sample stories ---</span>');
     $('samplesGrid').innerHTML = '';
@@ -802,7 +1238,7 @@ async function startTraining() {
         if (tid === BOS) break;
         sample.push(tokenSet[tid]);
       }
-      const story = sample.join(' ');
+      const story = sample.join(sep);
       log(`<span class="sample-line">  ${String(si+1).padStart(2)}: ${story}</span>`);
       const tag = document.createElement('span');
       tag.className = 'sample-tag'; tag.textContent = story;
@@ -813,11 +1249,31 @@ async function startTraining() {
   drawLossChart();
   log('<span class="info">✅ Training complete — scroll down to the inference playground ⬇</span>');
 
-  _trained = { state_dict, tokenSet, token_to_id, BOS, vocab_size, n_layer, block_size, rng, gpt };
+  _trained = { state_dict, tokenSet, token_to_id, BOS, vocab_size, n_layer, block_size, rng, gpt, tokenizerMode, sep };
 
+  // Update inference section
+  const modeLower = currentMode;
+  $('inferModeBadge').textContent = DATASETS[currentMode].label;
+  $('inferModeBadge').className = 'mode-badge ' + modeLower;
   $('inferSection').classList.add('visible');
-  $('vocabHint').innerHTML = `<strong>Vocabulary (${tokenSet.length} emoji + ⏹ end token):</strong><br><span class="emoji-list">${tokenSet.join('  ')}  ⏹</span>`;
-  $('storyDisplay').innerHTML = '<span style="color:var(--text-dim);font-size:1rem;">Enter a few emoji above (separated by spaces), then press Continue to watch the model predict the next token one by one, until it outputs ⏹ to end the story.</span>';
+
+  // Vocab hint
+  const displayTokens = tokenSet.slice(0, 80).join(sep || ' ');
+  const extra = tokenSet.length > 80 ? ` … +${tokenSet.length - 80} more` : '';
+  $('vocabHint').innerHTML = `<strong>Vocabulary (${tokenSet.length} tokens + ⏹ end)</strong> · ${DATASETS[currentMode].hint}<br><span class="token-list">${displayTokens}${extra}  ⏹</span>`;
+
+  // Set inference placeholder by mode
+  const placeholders = {
+    emoji: '🌅 🐓 🎵',
+    english: 'the sun rose',
+    chinese: '太阳升起',
+    custom: 'enter a prompt…',
+  };
+  $('inferInput').placeholder = placeholders[currentMode] || 'enter a prompt…';
+
+  // Update story display mode class
+  $('storyDisplay').className = 'story-display' + (currentMode === 'emoji' ? ' mode-emoji' : '');
+  $('storyDisplay').innerHTML = '<span style="color:var(--text-dim);font-size:0.9rem;">Enter a prompt above (separated by spaces for emoji/english, or just type characters for chinese), then press Continue to watch the model predict the next token one by one, until it outputs ⏹ to end the story.</span>';
   $('inferInput').focus();
   $('inferSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -828,7 +1284,7 @@ async function startTraining() {
 
 function stopTraining() { stopFlag = true; }
 
-// ===== INFERENCE: predict next token, one at a time =====
+// ===== INFERENCE =====
 let inferRunning = false;
 
 async function runInference() {
@@ -836,19 +1292,20 @@ async function runInference() {
   inferRunning = true;
   $('btnInfer').disabled = true;
 
-  const { state_dict, tokenSet, token_to_id, BOS, vocab_size, n_layer, block_size, rng, gpt } = _trained;
+  const { state_dict, tokenSet, token_to_id, BOS, vocab_size, n_layer, block_size, rng, gpt, tokenizerMode, sep } = _trained;
   const token_ids = Array.from({ length: vocab_size }, (_, i) => i);
   const temperature = +$('cfgTemp').value;
 
   // Parse prompt
-  const promptTokens = tokenizeEmojiLine($('inferInput').value);
+  const rawPrompt = $('inferInput').value;
+  const promptTokens = tokenizeLine(rawPrompt, tokenizerMode);
   const validPrompt = promptTokens.filter(t => token_to_id.has(t));
   const unknownTokens = promptTokens.filter(t => !token_to_id.has(t));
   if (unknownTokens.length > 0) {
-    log(`<span class="loss-bad">⚠ Unknown tokens (not in vocab): ${unknownTokens.join(' ')}</span>`);
+    log(`<span class="loss-bad">⚠ Unknown tokens (not in vocab): ${unknownTokens.join(sep || ' ')}</span>`);
   }
   if (validPrompt.length === 0) {
-    log(`<span class="loss-bad">⚠ No valid tokens in prompt. Using BOS only.</span>`);
+    log(`<span class="loss-bad">⚠ No valid tokens in prompt. Generating from BOS.</span>`);
   }
 
   const promptIds = [BOS, ...validPrompt.map(t => token_to_id.get(t))];
@@ -858,7 +1315,7 @@ async function runInference() {
   display.innerHTML = '';
   for (const t of validPrompt) {
     const sp = document.createElement('span');
-    sp.className = 'tok-prompt'; sp.textContent = t + ' ';
+    sp.className = 'tok-prompt'; sp.textContent = t + (sep || '');
     display.appendChild(sp);
   }
   const cursor = document.createElement('span');
@@ -871,7 +1328,7 @@ async function runInference() {
 
   await new Promise(r => setTimeout(r, 100));
 
-  // Feed prompt through model to build KV cache
+  // Feed prompt through model
   const keys = Array.from({ length: n_layer }, () => []);
   const values_kv = Array.from({ length: n_layer }, () => []);
   for (let i = 0; i < promptIds.length - 1; i++) {
@@ -893,31 +1350,27 @@ async function runInference() {
     genCount++;
     $('inferStepLabel').textContent = `generation step ${genCount}: model sees ${posId + 1} tokens → predicts next`;
 
-    // Show probability bars
-    showProbBars(probData, tokenSet, BOS, nextId);
+    showProbBars(probData, tokenSet, BOS, nextId, sep);
 
-    // Pause for drama
     await new Promise(r => setTimeout(r, 500));
 
     if (nextId === BOS) {
-      // END token
       cursor.remove();
       const endSp = document.createElement('span');
       endSp.className = 'tok-gen';
       endSp.textContent = '⏹';
       endSp.style.opacity = '0.5';
-      endSp.style.fontSize = '1.5rem';
+      endSp.style.fontSize = '1.2rem';
       display.appendChild(endSp);
       $('inferStepLabel').textContent = `generation step ${genCount}: model predicted ⏹ end token — story complete!`;
       log(`<span class="info">Inference: ${genCount} tokens generated, model chose ⏹ end.</span>`);
       break;
     }
 
-    // Append token with pop animation
     cursor.remove();
     const sp = document.createElement('span');
     sp.className = 'tok-gen';
-    sp.textContent = tokenSet[nextId] + ' ';
+    sp.textContent = tokenSet[nextId] + (sep || '');
     display.appendChild(sp);
     display.appendChild(cursor);
 
@@ -936,7 +1389,7 @@ async function runInference() {
   $('btnInfer').disabled = false;
 }
 
-function showProbBars(probData, tokenSet, BOS, chosenId) {
+function showProbBars(probData, tokenSet, BOS, chosenId, sep) {
   const indexed = probData.map((p, i) => ({ p, i }));
   indexed.sort((a, b) => b.p - a.p);
   const top = indexed.slice(0, 7);
@@ -960,7 +1413,7 @@ function showProbBars(probData, tokenSet, BOS, chosenId) {
     const row = document.createElement('div');
     row.className = 'prob-row' + (isChosen ? ' prob-chosen' : '');
     row.innerHTML = `
-      <div class="prob-emoji">${label}</div>
+      <div class="prob-token">${label}</div>
       <div class="prob-track"><div class="prob-fill" style="width:${barW}%;background:${fillColor};"></div></div>
       <div class="prob-pct">${pct}%</div>
       ${isChosen ? '<span style="font-size:0.6rem;color:var(--accent);margin-left:0.3rem;">← sampled</span>' : ''}
