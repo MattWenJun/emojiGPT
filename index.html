@@ -838,6 +838,7 @@ const DATASETS = {
 };
 
 let currentMode = 'emoji';
+let isFirstLoad = true;
 let customText = '';
 
 function tokenizeLine(line, mode) {
@@ -868,6 +869,7 @@ function getEffectiveTokenizer() {
 
 function switchDataset(mode) {
   if (mode === currentMode && mode !== 'custom') return;
+  const prevMode = currentMode;
   currentMode = mode;
 
   // Update tab UI
@@ -886,22 +888,23 @@ function switchDataset(mode) {
   const hintEl = document.getElementById('dataTextareaHint');
   hintEl.textContent = ds.hint + ' · Edit freely or replace with your own stories.';
 
-  // Adjust recommended hyperparameters per mode
-  if (mode === 'english') {
-    document.getElementById('cfgBlock').value = 24;
-    document.getElementById('cfgEmbd').value = 32;
-    document.getElementById('cfgSteps').value = 3000;
-    document.getElementById('cfgTemp').value = 0.7;
-  } else if (mode === 'chinese') {
-    document.getElementById('cfgBlock').value = 32;
-    document.getElementById('cfgEmbd').value = 32;
-    document.getElementById('cfgSteps').value = 3000;
-    document.getElementById('cfgTemp').value = 0.8;
-  } else {
-    document.getElementById('cfgBlock').value = 32;
-    document.getElementById('cfgEmbd').value = 16;
-    document.getElementById('cfgSteps').value = 2000;
-    document.getElementById('cfgTemp').value = 0.5;
+  // Adjust recommended hyperparameters per mode — only if user hasn't manually changed them
+  const DEFAULTS = {
+    emoji:   { cfgBlock: 32, cfgEmbd: 16, cfgSteps: 2000, cfgTemp: 0.5 },
+    english: { cfgBlock: 24, cfgEmbd: 32, cfgSteps: 3000, cfgTemp: 0.7 },
+    chinese: { cfgBlock: 32, cfgEmbd: 32, cfgSteps: 3000, cfgTemp: 0.8 },
+    custom:  { cfgBlock: 32, cfgEmbd: 16, cfgSteps: 2000, cfgTemp: 0.5 },
+  };
+  const prevDefaults = DEFAULTS[prevMode] || DEFAULTS.emoji;
+  const nextDefaults = DEFAULTS[mode] || DEFAULTS.emoji;
+  for (const [id, nextVal] of Object.entries(nextDefaults)) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    // Only overwrite if the current value matches the previous mode's default
+    // (i.e. user hasn't manually changed it)
+    if (String(el.value) === String(prevDefaults[id]) || isFirstLoad) {
+      el.value = nextVal;
+    }
   }
 
   if (mode === 'custom') {
@@ -912,6 +915,7 @@ function switchDataset(mode) {
       document.getElementById('cfgData').placeholder = 'Upload a .txt file above, or paste your stories here (one per line)…';
     }
     updateDatasetStats();
+    isFirstLoad = false;
     return;
   }
 
@@ -919,6 +923,7 @@ function switchDataset(mode) {
   setTextareaContent(DATASET_TEXTS[mode]);
   document.getElementById('tabStatusText').textContent = ds.label.toLowerCase() + ' stories loaded';
   updateDatasetStats();
+  isFirstLoad = false;
 }
 
 function setTextareaContent(text) {
@@ -1434,7 +1439,7 @@ function showProbBars(probData, tokenSet, BOS, chosenId, sep) {
     row.innerHTML = `
       <div class="prob-token">${label}</div>
       <div class="prob-track"><div class="prob-fill" style="width:${barW}%;background:${fillColor};"></div></div>
-      <div class="prob-pct">${pct}%</div>
+      <div class="prob-pct">${pct}</div>
       ${isChosen ? '<span style="font-size:0.6rem;color:var(--accent);margin-left:0.3rem;">← sampled</span>' : ''}
     `;
     el.appendChild(row);
