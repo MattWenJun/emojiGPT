@@ -1,8 +1,8 @@
 # emojiGPT 🧠✨
 
-### Possibly the world's smallest GPT that can write stories.
+### Possibly the world's smallest GPT that covers the full pipeline — training, inference, and story generation — in one file.
 
-~4,000 parameters. Trains in 30 seconds. Runs entirely in your browser. No server, no dependencies, no install. Just one HTML file.
+~4,000 parameters. Trains in 30 seconds. Runs entirely in your browser. No server, no dependencies, no install.
 
 ## What is this?
 
