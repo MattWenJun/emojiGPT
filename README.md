@@ -72,7 +72,7 @@ Emoji as dimensionality reduction + the human brain as the decompressor — that
 
 ## Acknowledgements
 
-Built on [**@karpathy**](https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95)'s microGPT and [**@xenova**](https://github.com/xenova/microgpt.js)'s microgpt.js browser port — beautiful, minimal implementations that made this possible. emojiGPT extends their work from name generation to emoji story generation, with a new training dataset, inference playground, and UI.
+Built on [**@karpathy**](https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95)'s microGPT and [**@xenova**](https://github.com/xenova/microgpt.js)'s microgpt.js browser port — beautiful, minimal implementations that made this possible. emojiGPT extends their work from name generation to emoji story generation — with a fully editable training dataset (swap in your own stories to change what the model learns), a token-by-token inference playground with probability visualization, and a redesigned UI.
 
 ## ⭐ Like it? Star it!
 
