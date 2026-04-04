@@ -2,17 +2,7 @@
 
 ### Possibly the world's smallest GPT that can write stories.
 
-~4,000 parameters. Trains in 30 seconds. Runs entirely in your browser. No server, no dependencies, no install.
-
----
-
-**The key insight:** Emoji are a radically compressed vocabulary. A single 🏥 carries the meaning that would take an entire sentence in English. By training on emoji sequences instead of text, we collapse the problem space by orders of magnitude — making it possible for a mass GPT to learn and generate coherent narrative arcs like "🤕 → 🏥 → 💉 → 🙏 → 😊".
-
-The other half of the magic is **you**. Your brain automatically unpacks each emoji into a rich scene — the hospital visit, the injection, the prayer, the relief. The model writes a compressed story; your mind decompresses it into a full one.
-
-This is where AI meets cognitive psychology: emoji as dimensionality reduction + the human brain as the decompressor — together, they make a ~4K-parameter model capable of genuine story generation.
-
----
+~4,000 parameters. Trains in 30 seconds. Runs entirely in your browser. No server, no dependencies, no install. Just one HTML file.
 
 ## What is this?
 
@@ -60,15 +50,19 @@ Default config: 16-dim embeddings, 4 attention heads, 1 layer, ~4K parameters.
 - **Interactive inference** — type emoji prompts, see token-by-token generation with probability bars
 - **Zero dependencies** — one self-contained HTML file
 
+## Why does it work?
+
+How can a ~4K-parameter model generate coherent stories? The answer is a blend of AI and cognitive psychology.
+
+**Emoji are a natural dimensionality reduction.** A single 🏥 carries the meaning that would take an entire sentence in English. By training on emoji sequences instead of text, we collapse the problem space by orders of magnitude.
+
+**The other half of the magic is you.** Your brain automatically unpacks each emoji into a rich scene — the hospital visit, the injection, the prayer, the relief. The model writes a compressed story; your mind decompresses it into a full one.
+
+Emoji as dimensionality reduction + the human brain as the decompressor — that's how a tiny transformer learns to tell stories.
+
 ## Acknowledgements
 
-This project is a derivative work built on top of an incredible chain of open-source contributions:
-
-1. [**microGPT**](https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95) by **Andrej Karpathy** — the original minimal GPT implementation in pure, dependency-free Python. It demonstrated that you can train and run a complete GPT from scratch in a single file, with a working autograd engine and transformer architecture. The original model generates English names.
-
-2. [**microgpt.js**](https://github.com/xenova/microgpt.js) by **Xenova** — a JavaScript port of Karpathy's microGPT that brought the entire training and inference pipeline into the browser. This is the direct codebase that emojiGPT is built upon.
-
-**What emojiGPT adds:** Starting from Xenova's microgpt.js, we redesigned the application from name generation to **emoji story generation** — a new training dataset of ~170 emoji narratives, a token-by-token inference playground with real-time probability visualization, and a fully reworked UI. The core autograd engine and transformer architecture come from the upstream projects above.
+Built on [**@karpathy**](https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95)'s microGPT and [**@xenova**](https://github.com/xenova/microgpt.js)'s microgpt.js browser port — beautiful, minimal implementations that made this possible. emojiGPT extends their work from name generation to emoji story generation, with a new training dataset, inference playground, and UI.
 
 ## ⭐ Like it? Star it!
 
