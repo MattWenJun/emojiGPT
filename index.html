@@ -306,7 +306,7 @@
           </div>
           <div class="config-item">
             <label>Block size</label>
-            <input id="cfgBlock" type="number" value="32" min="4" max="128">
+            <input id="cfgBlock" type="number" value="32" min="4" max="64">
           </div>
           <div class="config-item">
             <label>Train steps</label>
@@ -1128,6 +1128,15 @@ async function startTraining() {
   const tokenizerMode = getEffectiveTokenizer();
   const rawLines = $('cfgData').value.trim().split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const docs = rawLines.map(l => tokenizeLine(l, tokenizerMode));
+
+  if (docs.length === 0) {
+    log('⚠ No stories to train on. Select a dataset tab or paste stories above.');
+    running = false;
+    $('btnTrain').disabled = false;
+    $('btnStop').style.display = 'none';
+    return;
+  }
+
   rng.shuffle(docs);
 
   const tokenSet = [...new Set(docs.flat())].sort();
