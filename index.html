@@ -227,6 +227,8 @@
   }
   .vocab-hint strong { color: var(--text); }
   .vocab-hint .token-list { font-size: 0.85rem; line-height: 1.8; word-break: break-word; }
+  .vocab-expand { color: var(--accent); text-decoration: none; font-weight: 500; cursor: pointer; }
+  .vocab-expand:hover { text-decoration: underline; }
 
   .infer-step-label {
     font-size: 0.7rem; color: var(--text-dim); margin-top: 0.5rem;
@@ -4335,8 +4337,10 @@ async function startTraining() {
 
   // Vocab hint
   const displayTokens = tokenSet.slice(0, 80).join(sep || ' ');
-  const extra = tokenSet.length > 80 ? ` … +${tokenSet.length - 80} more` : '';
-  $('vocabHint').innerHTML = `<strong>Vocabulary (${tokenSet.length} tokens + ⏹ end)</strong> · ${DATASETS[currentMode].hint}<br><span class="token-list">${displayTokens}${extra}  ⏹</span>`;
+  const hasMore = tokenSet.length > 80;
+  const moreCount = tokenSet.length - 80;
+  const allTokens = tokenSet.join(sep || ' ');
+  $('vocabHint').innerHTML = `<strong>Vocabulary (${tokenSet.length} tokens + ⏹ end)</strong> · ${DATASETS[currentMode].hint}<br><span class="token-list"><span class="token-list-short">${displayTokens}${hasMore ? ` <a href="#" class="vocab-expand" onclick="event.preventDefault();this.parentElement.style.display='none';this.parentElement.nextElementSibling.style.display='inline'">… +${moreCount} more</a>` : ''}  ⏹</span><span class="token-list-full" style="display:none">${allTokens}  ⏹ <a href="#" class="vocab-expand" onclick="event.preventDefault();this.parentElement.style.display='none';this.parentElement.previousElementSibling.style.display='inline'">collapse</a></span></span>`;
 
   // Set inference placeholder by mode
   const placeholders = {
